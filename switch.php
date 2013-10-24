@@ -135,12 +135,7 @@
   /**
    * Load the common config file
    */
-  include "../utils-php/config.php";
-
-  /**
-   * Common implementation for needed to return sru compliant error messages
-   */
-  include "../utils-php/diagnostics.php";
+  include_once "../utils-php/common.php";
 
   /**
    * Array (a map) containing default xsl style sheets
