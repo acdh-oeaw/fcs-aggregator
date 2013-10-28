@@ -91,7 +91,7 @@
    * </pre>
    * 
    * @uses HandleXFormatCases()
-   * @uses Diagnostics()
+   * @uses diagnostics()
    * @uses GetDefaultStyles()
    * @uses $configName
    * @uses $fcsConfig
@@ -204,12 +204,27 @@
   }
 
   /**
+   * Construct format names to be attached to operation to look up a stylesheet
+   * @uses $xformat 
+   */
+  function GetFormatId() {
+    global $xformat;
+
+    if (stripos($xformat, 'html') !== false) {
+        return "";
+    } else {
+        return "-" . $xformat;
+    }
+  }
+  
+  /**
    * Get default xsl style sheets
    * 
    * Loads $switchConfig as an XML DOM, uses XPath to fetch styles elements and
    * fills the settings into the $globalStyles array.
    * @uses $switchConfig
    * @uses $globalStyles
+   * @uses $xformat
    */
   function GetDefaultStyles()
   {
@@ -223,14 +238,17 @@
     $query = '//styles';
     $entries = $xpath->query($query);
 
+    $format = GetFormatId();
+    
     foreach ($entries as $entry)
     {
       $keys = array_keys($globalStyles);
       foreach ($keys as $key)
       {
-        $hstr = GetNodeValueWithAttribute($entry, "style", "operation", $key);
+        $key_with_format = $key . $format;
+        $hstr = GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
         if ($hstr != "")
-          $globalStyles[$key] = $hstr;
+          $globalStyles[$key_with_format] = $hstr;
       }
     }
   }
@@ -534,7 +552,7 @@
       break;
       default:
         //"Unsupported parameter value"
-        Diagnostics(6, "operation: '$operation'");
+        diagnostics(6, "operation: '$operation'");
       break;
     }
 
@@ -584,7 +602,7 @@
    * a diagnostic message 15 Unsupported context set is returned to the client.
    * @uses url_exists()
    * @uses ReplaceLocalHost()
-   * @uses Diagnostics()
+   * @uses diagnostics()
    * @param string $url The URL form which the XML should be fetched.
    * @param string $headerStr A string that should be sent as response header
    */
@@ -601,7 +619,7 @@
     }
     else
       //"Unsupported context set"
-      Diagnostics(15, str_replace("&", "&amp;", $url));
+      diagnostics(15, str_replace("&", "&amp;", $url));
   }
 
   /**
@@ -612,7 +630,8 @@
    * If operation is not from the described set a diagnostic message 6 Unsupported parameter value is returned to the client.
    * @uses ReplaceLocalHost()
    * @uses $globalStyles
-   * @uses Diagnostics()
+   * @uses $xformat
+   * @uses diagnostics()
    * @param string $operation The operation for which to get the XSL document. One of "explain", "scan" or "searchRetrieve"
    * @param array $configItem A array (a map) that has a "style" key. Used for passing a style for the "searchRetrieve" operation.
    * @return string The URL of the style sheet. If it's located on the local host the URL contains 127.0.0.1 instead of the real domain name.
@@ -620,44 +639,43 @@
   function GetXslStyle($operation, $configItem)
   {
     global $globalStyles;
+    
+    $format = GetFormatId();
 
     switch ($operation)
     {
       case "explain" :
-        if (array_key_exists('explain', $globalStyles))
-          $style = $globalStyles['explain'];
-        elseif (array_key_exists('default', $globalStyles))
-          $style = $globalStyles['default'];
+        if (array_key_exists('explain'.$format, $globalStyles))
+          $style = $globalStyles['explain'.$format];
+        elseif (array_key_exists('default'.$format, $globalStyles))
+          $style = $globalStyles['default'.$format];
         else
           $style == "";
 
         return ReplaceLocalHost($style);
-      break;
       case "scan" :
-        if (array_key_exists('scan', $globalStyles))
-          $style = $globalStyles['scan'];
-        elseif (array_key_exists('default', $globalStyles))
-          $style = $globalStyles['default'];
+        if (array_key_exists('scan'.$format, $globalStyles))
+          $style = $globalStyles['scan'.$format];
+        elseif (array_key_exists('default'.$format, $globalStyles))
+          $style = $globalStyles['default'.$format];
         else
           $style == "";
 
         return ReplaceLocalHost($style);
-      break;
       case "searchRetrieve" :
-        if (array_key_exists('style', $configItem))
-          $style = $configItem['style'];
-        elseif (array_key_exists('searchRetrieve', $globalStyles))
-          $style = $globalStyles['searchRetrieve'];
-        elseif (array_key_exists('default', $globalStyles))
-          $style = $globalStyles['default'];
+        if (array_key_exists('style'.$format, $configItem))
+          $style = $configItem['style'.$format];
+        elseif (array_key_exists('searchRetrieve'.$format, $globalStyles))
+          $style = $globalStyles['searchRetrieve'.$format];
+        elseif (array_key_exists('default'.$format, $globalStyles))
+          $style = $globalStyles['default'.$format];
         else
           $style == "";
 
         return ReplaceLocalHost($style);
-      break;
       default:
         //"Unsupported parameter value"
-        Diagnostics(6, "operation: '$operation'");
+        diagnostics(6, "operation: '$operation'");
       break;
     }
   }
@@ -696,35 +714,40 @@
    * @param DOMDocument|SimpleXMLElement $xslDoc The XSL style sheet used for the transformation.
    * @param bool $useParams If set $xformat and $scriptsUrl are passed to the XSL processor as parameters "format" and "scripts_url".
    */
-  function ReturnXslT($xmlDoc, $xslDoc, $useParams)
-  {
+  function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
+    global $xformat;
+    
     $proc = new XSLTProcessor();
     $proc->importStylesheet($xslDoc);
 
-    if ($useParams)
-    {
-      global $xformat;
-      global $scriptsUrl;
-	  global $operation;
-	  global $xcontext;
-      global $startRecord;
-      global $maximumRecords;
-      global $scanClause;
-      global $query;
-	  global $switchUrl;
-      
-      $proc->setParameter('', 'format', $xformat);
-      $proc->setParameter('', 'scripts_url', $scriptsUrl);
-	  $proc->setParameter('', 'operation', $operation);
-	  $proc->setParameter('', 'x-context', $xcontext);
-	  $proc->setParameter('', 'startRecord', $startRecord);
-	  $proc->setParameter('', 'maximumRecords', $maximumRecords);
-	  $proc->setParameter('', 'scanClause', $scanClause);
-	  $proc->setParameter('', 'q', $query);
-	  $proc->setParameter('', 'base_url', $switchUrl);
+    if ($useParams) {
+        global $xformat;
+        global $scriptsUrl;
+        global $operation;
+        global $xcontext;
+        global $startRecord;
+        global $maximumRecords;
+        global $scanClause;
+        global $query;
+        global $switchUrl;
+
+        $proc->setParameter('', 'format', $xformat);
+        $proc->setParameter('', 'scripts_url', $scriptsUrl);
+        $proc->setParameter('', 'operation', $operation);
+        $proc->setParameter('', 'x-context', $xcontext);
+        $proc->setParameter('', 'startRecord', $startRecord);
+        $proc->setParameter('', 'maximumRecords', $maximumRecords);
+        $proc->setParameter('', 'scanClause', $scanClause);
+        $proc->setParameter('', 'q', $query);
+        $proc->setParameter('', 'base_url', $switchUrl);
     }
 
-    header("content-type: text/html; charset=UTF-8");
+    if (stripos($xformat, "html")) {
+        header("content-type: text/html; charset=UTF-8");
+    }
+    if ($xformat === "json") {
+        header("content-type: application/json; charset=UTF-8");
+    }
     print $proc->transformToXML($xmlDoc);
   }
 
@@ -752,7 +775,7 @@
    * @uses GetConfig()
    * @uses GetQueryUrl()
    * @uses ReturnXslT()
-   * @uses Diagnostics()
+   * @uses diagnostics()
    * @uses GetDomDocument()
    * @uses GetXslStyleDomDocument()
    * @uses ReturnXmlDocument()
@@ -774,7 +797,7 @@
 
         $fileName = GetQueryUrl($uri, $item, $type);
 
-        if (stripos($xformat, "html")!== false)
+        if (stripos($xformat, "html") !== false || $xformat === "json")
         {
           $xmlDoc = GetDomDocument($fileName);
           if ($xmlDoc !== false)
@@ -784,11 +807,11 @@
               ReturnXslT($xmlDoc, $xslDoc, true);
             else
               //"Unsupported context set"
-              Diagnostics(15, str_replace("&", "&amp;", GetXslStyle($operation, $configItem) .":  " . $item));
+              diagnostics(15, str_replace("&", "&amp;", GetXslStyle($operation, $configItem) .":  " . $item));
           }
           else
             //"Unsupported context set"
-            Diagnostics(15, str_replace("&", "&amp;", $fileName));
+            diagnostics(15, str_replace("&", "&amp;", $fileName));
         }
         elseif (stripos($xformat, "xsltproc") !== false)
         {
@@ -814,13 +837,10 @@
       else
       {
         //"Unsupported context set"
-        Diagnostics(15, str_replace("&", "&amp;", $item));
+        diagnostics(15, str_replace("&", "&amp;", $item));
       }
     }
   }
-
-  //load default xsl style sheets from $switchConfig
-  GetDefaultStyles();
 
   // params SRU
   /**
@@ -1015,6 +1035,9 @@
    */
   $context = explode(",", $xcontext);
 
+  //load default xsl style sheets from $switchConfig, uses $xformat
+  GetDefaultStyles();
+
   //no operation param provided ==> explain
   if ($operation === false)
     ReturnExplain();
@@ -1033,19 +1056,19 @@
       case "scan" :
           if ($scanClause === false)
             //"Mandatory parameter not supplied"
-            Diagnostics(7, "scanClause");
+            diagnostics(7, "scanClause");
           elseif ($version === false)
             //"Mandatory parameter not supplied"
-            Diagnostics(7, "version");
+            diagnostics(7, "version");
           elseif ($scanClause == "")
             //"Unsupported parameter value"
-            Diagnostics(6, "scanClause: '$scanClause'");
+            diagnostics(6, "scanClause: '$scanClause'");
           elseif ($version == "")
             //"Unsupported parameter value"
-            Diagnostics(6, "version: '$version'");
+            diagnostics(6, "version: '$version'");
           elseif ($version != "1.2")
             //"Unsupported version"
-            Diagnostics(5, "version: '$version'");
+            diagnostics(5, "version: '$version'");
           else
           {
             if ($xcontext == "")
@@ -1055,7 +1078,7 @@
                 ReturnScan($version);
               else
                 //"Unsupported parameter value"
-                Diagnostics(6, "scanClause: '$scanClause'");
+                diagnostics(6, "scanClause: '$scanClause'");
             }
             else
             {
@@ -1067,19 +1090,19 @@
       case "searchRetrieve" :
           if ($query === false)
             //"Mandatory parameter not supplied"
-            Diagnostics(7, "query");
+            diagnostics(7, "query");
           elseif ($version === false)
             //"Mandatory parameter not supplied"
-            Diagnostics(7, "version");
+            diagnostics(7, "version");
           elseif ($query == "")
             //"Unsupported parameter value"
-            Diagnostics(6, "query: '$query'");
+            diagnostics(6, "query: '$query'");
           elseif ($version == "")
             //"Unsupported parameter value"
-            Diagnostics(6, "version: '$version'");
+            diagnostics(6, "version: '$version'");
           elseif ($version != "1.2")
             //"Unsupported version"
-            Diagnostics(5, "version: '$version'");
+            diagnostics(5, "version: '$version'");
           else
           {
             HandleXFormatCases();
@@ -1087,7 +1110,7 @@
       break;
       default:
         //"Unsupported parameter value"
-        Diagnostics(6, "operation: '$operation'");
+        diagnostics(6, "operation: '$operation'");
       break;
     }
   }

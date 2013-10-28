@@ -115,6 +115,7 @@
   }
 
   header("Content-Type: text/plain");
+  header("Content-Encoding: chunked");
   print "Starting queries ...\n";
 
   $doc = new DOMDocument;
@@ -175,5 +176,3 @@
   fclose($handle);
 
   print "\nIndexCache written to file (" . realpath($indexCacheFileName) . ")";
-
-?>
