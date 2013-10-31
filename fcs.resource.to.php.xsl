@@ -5,6 +5,7 @@
     <xsl:param name="uri"/>
     <xsl:param name="type"/>
     <xsl:param name="style"/>
+    <xsl:param name="requested-context"/>
   <xsl:output method="text" indent="no"/>
   <xsl:template match="/">
     <xsl:for-each select="sru:scanResponse/sru:terms/sru:term/sru:extraTermData/sru:terms/sru:term">
@@ -22,13 +23,25 @@
       <xsl:text>", </xsl:text>
       <xsl:text>"type" =&gt; "</xsl:text>
       <xsl:value-of select="$type"/>
-      <xsl:text>", </xsl:text>
-      <xsl:text>"style" =&gt; "</xsl:text>
-      <xsl:value-of select="$style"/>
-      <xsl:text>", </xsl:text>
-      <xsl:text>"context" =&gt; "</xsl:text>
-      <xsl:value-of select="substring-after(sru:value, concat(../../../sru:value,':'))"/>
-      <xsl:text>");
+      <xsl:text>"</xsl:text>
+      <xsl:if test="$style != ''">
+        <xsl:text>, style" =&gt; "</xsl:text>
+        <xsl:value-of select="$style"/>
+        <xsl:text>"</xsl:text>
+      </xsl:if>
+      <xsl:choose>
+        <xsl:when test="../../../sru:value != 'default'">
+          <xsl:text>, "context" =&gt; "</xsl:text>
+          <xsl:value-of select="substring-after(sru:value, concat(../../../sru:value,':'))"/>
+          <xsl:text>"</xsl:text>
+        </xsl:when>
+        <xsl:when test="$requested-context != ''">
+          <xsl:text>, "context" =&gt; "</xsl:text>
+          <xsl:value-of select="substring-after(sru:value, concat($requested-context,':'))"/>
+          <xsl:text>"</xsl:text>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text>);
     </xsl:text>
     </xsl:for-each>
   </xsl:template>

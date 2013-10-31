@@ -162,6 +162,7 @@
        $proc->setParameter("", "uri", $uri);
        $proc->setParameter("", "type", $type);
        $proc->setParameter("", "style", $style);
+       $proc->setParameter("", "requested-context", $name);
 
        //xsl transform the query result ...
        //... and append it to the existing results
@@ -191,11 +192,10 @@
 '    $configName = array();'.
 /* "\n    " . '$configContext = array();' .
 */ "\n\n    " .
-$content . "\n?>";
+$content . "\n";
   fwrite($handle, $content);
   fclose($handle);
 
   //after everything is done, display a success message ...
   //... and the generated php code
   success($fcsConfig, $urls, $content);
-?>

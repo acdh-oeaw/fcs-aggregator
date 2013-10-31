@@ -283,8 +283,12 @@
          $type = GetNodeValue($entry, "type");
          $uri = GetNodeValue($entry, "uri");
          $style = GetNodeValue($entry, "style");
-         return array("name" => $name, "type" => $type, "uri" => $uri, "style" => $style);
-       }
+         $ret = array("name" => $name, "type" => $type, "uri" => $uri);
+         if ($style !== "") {
+                $ret["style"] = $style;
+            }
+         return $ret;
+        }
     }
 
     global $fcsConfigFound;
@@ -296,7 +300,11 @@
       if (array_key_exists($context, $configName))
       {
         $conf = $configName[$context];
-        return array("name" => $conf["name"], "type" => $conf["type"], "uri" => $conf["endPoint"], "style" => $conf["style"]);
+        $ret = array("name" => $conf["name"], "type" => $conf["type"], "uri" => $conf["endPoint"]);
+        if (array_key_exists("style", $conf)) {
+            $ret["style"] = $conf["style"];
+        }
+        return $ret;
       }
     }
 
@@ -545,7 +553,7 @@
         $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "recordSchema", $recordSchema);
         $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "resultSetTTL", $resultSetTTL);
 		
-		$urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-dataview", $xdataview);
+	$urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-dataview", $xdataview);
         
         if (stripos($xformat, "html")=== false)
           $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-format", $xformat);
