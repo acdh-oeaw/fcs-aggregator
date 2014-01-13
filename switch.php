@@ -136,6 +136,8 @@
    * Load the common config file
    */
   include_once "../utils-php/common.php";
+  
+  use clausvb\vlib\vlibTemplate;
 
   /**
    * Array (a map) containing default xsl style sheets
