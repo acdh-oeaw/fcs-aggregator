@@ -111,7 +111,9 @@
    * @uses $resultSetTTL
    * @package fcs-aggregator
    */
-   
+
+namespace ACDH\FCSSRU\switchAgrregator;
+
   /**
    * Determines how parameters are checked
    * 
@@ -233,10 +235,10 @@
     global $switchConfig;
     global $globalStyles;
 
-    $doc = new DOMDocument;
+    $doc = new \DOMDocument;
     $doc->Load($switchConfig);
 
-    $xpath = new DOMXPath($doc);
+    $xpath = new \DOMXPath($doc);
     $query = '//styles';
     $entries = $xpath->query($query);
 
@@ -270,10 +272,10 @@
   function GetConfig($context)
   {
     global $switchConfig;
-    $doc = new DOMDocument;
+    $doc = new \DOMDocument;
     $doc->Load($switchConfig);
 
-    $xpath = new DOMXPath($doc);
+    $xpath = new \DOMXPath($doc);
     $query = '//item';
     $entries = $xpath->query($query);
 
@@ -331,11 +333,11 @@
     $configArray = array();
 
     //open $switchConfig (switch.config)
-    $doc = new DOMDocument;
+    $doc = new \DOMDocument;
     $doc->Load($switchConfig);
 
     //pick all item tags
-    $xpath = new DOMXPath($doc);
+    $xpath = new \DOMXPath($doc);
     $query = '//item';
     $entries = $xpath->query($query);
 
@@ -442,7 +444,7 @@
     
     $tmpl->pparse();
   }
-
+//delete me
   /**
    * Concats $url with the given $paramName and $paramValue
    * 
@@ -568,7 +570,7 @@
 
     return $endPoint . $urlStr;
   }
-
+// delete me
   /**
    * To speed up local queries the local servername (contained in $localhost) is replaced
    * by the term "127.0.0.1"
@@ -596,7 +598,7 @@
 
     if (url_exists($url))
     {
-      $xmlDoc = new DOMDocument();
+      $xmlDoc = new \DOMDocument();
       $xmlDoc->load($url);
 
       return $xmlDoc;
@@ -727,7 +729,7 @@
   function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
     global $xformat;
     
-    $proc = new XSLTProcessor();
+    $proc = new \XSLTProcessor();
     $proc->importStylesheet($xslDoc);
 
     if ($useParams) {
@@ -752,7 +754,7 @@
         $proc->setParameter('', 'base_url', $switchUrl);
     }
 
-    if (stripos($xformat, "html")) {
+    if (stripos($xformat, "html") !== false) {
         header("content-type: text/html; charset=UTF-8");
     }
     if ($xformat === "json") {
@@ -852,6 +854,7 @@
     }
   }
 
+  \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
   // params SRU
   /**
    * The operation requested by the client.
@@ -1034,7 +1037,7 @@
    * Possible values include "kwic", "full", "title", "facs", "navigation" and "xmlescaped".
    * On other values "the result is undefined "kwic" is assumed.
    * @global string $xdataview
-   */  
+   */ 
   if (isset($_GET['x-dataview'])) $xdataview = trim($_GET['x-dataview']); else $xdataview = "kwic";
 
   /**
@@ -1124,4 +1127,3 @@
       break;
     }
   }
-?>
