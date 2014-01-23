@@ -91,7 +91,7 @@
    * </pre>
    * 
    * @uses HandleXFormatCases()
-   * @uses diagnostics()
+   * @uses \ACDH\FCSSRU\diagnostics()
    * @uses GetDefaultStyles()
    * @uses $configName
    * @uses $fcsConfig
@@ -113,6 +113,12 @@
    */
 
 namespace ACDH\FCSSRU\switchAgrregator;
+
+include '../utils-php/EpiCurl.php';
+include '../utils-php/IndentDomDocument.php';
+
+use jmathai\phpMultiCurl\EpiCurl;
+use \ACDH\FCSSRU\IndentDomDocument;
 
   /**
    * Determines how parameters are checked
@@ -387,14 +393,12 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * @uses $vlibPath
    * @param string $version A version that is inserted into the template.
    */
-  function ReturnScan($version)
+  function GetScan($version)
   {
     global $scanCollectionsTemplate;
     global $vlibPath;
 
     require_once $vlibPath;
-
-    header ("content-type: text/xml; charset=UTF-8");
 
     //instantiate template engine with $scanCollectionsTemplate
     $tmpl = new vlibTemplate($scanCollectionsTemplate);
@@ -413,7 +417,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
 
     $tmpl->setloop('collection', $collection);
     //generate xml from template and return it
-    $tmpl->pparse();
+    return $tmpl->grab();
   }
 
   /**
@@ -426,8 +430,9 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * @uses $localhost
    * @uses $explainSwitchTemplate
    * @uses $explainSwitchXmlInfoSnippet
+   * @return string An XML description of this service.
    */
-  function ReturnExplain()
+  function GetExplain()
   {
     global $explainSwitchTemplate;
     global $explainSwitchXmlInfoSnippet;
@@ -442,7 +447,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
     $tmpl->setVar('hostid', $localhost);
     $tmpl->setVar('xmlinfosnippet', $explainSwitchXmlInfoSnippet);
     
-    $tmpl->pparse();
+    return $tmpl->grab();
   }
 //delete me
   /**
@@ -564,7 +569,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
       break;
       default:
         //"Unsupported parameter value"
-        diagnostics(6, "operation: '$operation'");
+        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
       break;
     }
 
@@ -614,25 +619,50 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * a diagnostic message 15 Unsupported context set is returned to the client.
    * @uses url_exists()
    * @uses ReplaceLocalHost()
-   * @uses diagnostics()
+   * @uses \ACDH\FCSSRU\diagnostics()
    * @param string $url The URL form which the XML should be fetched.
-   * @param string $headerStr A string that should be sent as response header
+   * @param string $xmlString An XML snippet that is to be used if there is no URL.
    */
-  function ReturnXmlDocument($url, $headerStr)
+  function ReturnXmlDocument($url, $xmlString = null)
   {
+    $url = ReplaceLocalHost($url);
+    header("content-type: text/xml; charset=UTF-8");
+    $xml = new IndentDOMDocument();
+    if (($url === "") && ($xmlString !== null)) {
+        $xml->loadXML($xmlString);       
+    } elseif (url_exists($url)) {
+        $upstream = EpiCurl::getInstance()->addCurl(curl_init($url));
+        $xml->loadXML($upstream->data);
+    } else {
+    //"Unsupported context set"
+        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
+        return;
+    }
+    $xml->formatOutput = true;
+    $xml->setWhiteSpaceForIndentation("    ")->xmlIndent();
+    $output = $xml->saveXML();
+    echo $output;
+}
+  
+  /**
+   * Return a file without processing anything.
+   * @todo Check if this is needed and for what purpose.
+   * @param string $url
+   * @param string $headerStr
+   */
+  function ReturnSomeFile($url, $headerStr) {
     $url = ReplaceLocalHost($url);
 
     if (url_exists($url))
     {
       if ($headerStr != "")
         header ($headerStr);
-
       readfile($url);
     }
     else
-      //"Unsupported context set"
-      diagnostics(15, str_replace("&", "&amp;", $url));
-  }
+    //"Unsupported context set"
+        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
+}
 
   /**
    * Get the location of the XSL style sheet associated with $operation
@@ -643,7 +673,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * @uses ReplaceLocalHost()
    * @uses $globalStyles
    * @uses $xformat
-   * @uses diagnostics()
+   * @uses \ACDH\FCSSRU\diagnostics()
    * @param string $operation The operation for which to get the XSL document. One of "explain", "scan" or "searchRetrieve"
    * @param array $configItem A array (a map) that has a "style" key. Used for passing a style for the "searchRetrieve" operation.
    * @return string The URL of the style sheet. If it's located on the local host the URL contains 127.0.0.1 instead of the real domain name.
@@ -687,7 +717,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
         return ReplaceLocalHost($style);
       default:
         //"Unsupported parameter value"
-        diagnostics(6, "operation: '$operation'");
+        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
       break;
     }
   }
@@ -703,6 +733,9 @@ namespace ACDH\FCSSRU\switchAgrregator;
    */
   function GetXslStyleDomDocument($operation, $configItem)
   {
+    if ($operation === false) {
+        $operation = "explain";
+    }
     $xslUrl = GetXslStyle($operation, $configItem);
     return GetDomDocument($xslUrl);
   }
@@ -727,37 +760,24 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * @param bool $useParams If set $xformat and $scriptsUrl are passed to the XSL processor as parameters "format" and "scripts_url".
    */
   function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
-    global $xformat;
+    global $sru_fcs_params;
     
     $proc = new \XSLTProcessor();
     $proc->importStylesheet($xslDoc);
 
     if ($useParams) {
-        global $xformat;
-        global $scriptsUrl;
-        global $operation;
-        global $xcontext;
-        global $startRecord;
-        global $maximumRecords;
-        global $scanClause;
-        global $query;
         global $switchUrl;
-
-        $proc->setParameter('', 'format', $xformat);
+        global $scriptsUrl;
+        
+        $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
-        $proc->setParameter('', 'operation', $operation);
-        $proc->setParameter('', 'x-context', $xcontext);
-        $proc->setParameter('', 'startRecord', $startRecord);
-        $proc->setParameter('', 'maximumRecords', $maximumRecords);
-        $proc->setParameter('', 'scanClause', $scanClause);
-        $proc->setParameter('', 'q', $query);
         $proc->setParameter('', 'base_url', $switchUrl);
     }
 
-    if (stripos($xformat, "html") !== false) {
+    if (stripos($sru_fcs_params->xformat, "html") !== false) {
         header("content-type: text/html; charset=UTF-8");
     }
-    if ($xformat === "json") {
+    if ($sru_fcs_params->xformat === "json") {
         header("content-type: application/json; charset=UTF-8");
     }
     print $proc->transformToXML($xmlDoc);
@@ -781,37 +801,55 @@ namespace ACDH\FCSSRU\switchAgrregator;
    * </ul>
    * </li>
    * </ol>
+   * @uses sru_fcs_params
    * @uses $context
    * @uses $xformat
    * @uses $operation
    * @uses GetConfig()
    * @uses GetQueryUrl()
    * @uses ReturnXslT()
-   * @uses diagnostics()
+   * @uses \ACDH\FCSSRU\diagnostics()
    * @uses GetDomDocument()
    * @uses GetXslStyleDomDocument()
    * @uses ReturnXmlDocument()
+   * @param string $xmlString Pass in some string that should be treated instead of fetching something.
    */
-  function HandleXFormatCases()
+  function HandleXFormatCases($xmlString = null)
   {
+    global $sru_fcs_params;
     global $context;
     global $xformat;
     global $operation;
 
     foreach($context as $item)
     {
-      $configItem = GetConfig($item);
-
+      if ($xmlString === null) {
+          $configItem = GetConfig($item);
+      } else {
+          $configItem = array(
+              "uri" => "internal",
+              "type" => "fcs.resource"
+          );
+      }
       if ($configItem !== false)
       {
         $uri = $configItem["uri"];
         $type = $configItem['type'];
 
-        $fileName = GetQueryUrl($uri, $item, $type);
+        if ($xmlString === null) {
+            $fileName = GetQueryUrl($uri, $item, $type);
+        } else {
+            $fileName = null;
+        }
 
-        if (stripos($xformat, "html") !== false || $xformat === "json")
+        if (stripos($sru_fcs_params->xformat, "html") !== false || $sru_fcs_params->xformat === "json")
         {
-          $xmlDoc = GetDomDocument($fileName);
+            if ($xmlString === null) {
+                $xmlDoc = GetDomDocument($fileName);
+            } else {
+                $xmlDoc = new \DOMDocument();
+                $xmlDoc->loadXML($xmlString);
+            }
           if ($xmlDoc !== false)
           {
             $xslDoc = GetXslStyleDomDocument($operation, $configItem);
@@ -819,13 +857,13 @@ namespace ACDH\FCSSRU\switchAgrregator;
               ReturnXslT($xmlDoc, $xslDoc, true);
             else
               //"Unsupported context set"
-              diagnostics(15, str_replace("&", "&amp;", GetXslStyle($operation, $configItem) .":  " . $item));
+              \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($operation, $configItem) .":  " . $item));
           }
           else
             //"Unsupported context set"
-            diagnostics(15, str_replace("&", "&amp;", $fileName));
+            \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $fileName));
         }
-        elseif (stripos($xformat, "xsltproc") !== false)
+        elseif (stripos($sru_fcs_params->xformat, "xsltproc") !== false)
         {
           $proc = new XSLTProcessor();
           header("content-type: text/plain; charset=UTF-8");
@@ -835,21 +873,21 @@ namespace ACDH\FCSSRU\switchAgrregator;
 		  else
 		    print "doesn't have Exslt support!\n";
         }
-        elseif (stripos($xformat, "xsl") !== false)
+        elseif (stripos($sru_fcs_params->xformat, "xsl") !== false)
         {
           // this option is more or less only for debugging (to see the xsl used)
           $style = GetXslStyle($operation, $configItem);
           ReturnXmlDocument($style, "content-type: text/xml; charset=UTF-8");
         }
-        elseif (stripos($xformat, "img") !== false)
-          ReturnXmlDocument($fileName, "content-type: image/jpg");
+        elseif (stripos($sru_fcs_params->xformat, "img") !== false)
+          ReturnSomeFile($fileName, "content-type: image/jpg");
         else
-          ReturnXmlDocument($fileName, "content-type: text/xml; charset=UTF-8");
+          ReturnXmlDocument($fileName, $xmlString);
       }
       else
       {
         //"Unsupported context set"
-        diagnostics(15, str_replace("&", "&amp;", $item));
+        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $item));
       }
     }
   }
@@ -1053,14 +1091,14 @@ namespace ACDH\FCSSRU\switchAgrregator;
 
   //no operation param provided ==> explain
   if ($operation === false)
-    ReturnExplain();
+    HandleXFormatCases(GetExplain());
   else
   {
     switch ($operation)
     {
       case "explain" :
           if ($xcontext == "")
-            ReturnExplain();
+            HandleXFormatCases(GetExplain());
           else
           {
             HandleXFormatCases();
@@ -1069,29 +1107,29 @@ namespace ACDH\FCSSRU\switchAgrregator;
       case "scan" :
           if ($scanClause === false)
             //"Mandatory parameter not supplied"
-            diagnostics(7, "scanClause");
+            \ACDH\FCSSRU\diagnostics(7, "scanClause");
           elseif ($version === false)
             //"Mandatory parameter not supplied"
-            diagnostics(7, "version");
+            \ACDH\FCSSRU\diagnostics(7, "version");
           elseif ($scanClause == "")
             //"Unsupported parameter value"
-            diagnostics(6, "scanClause: '$scanClause'");
+            \ACDH\FCSSRU\diagnostics(6, "scanClause: '$scanClause'");
           elseif ($version == "")
             //"Unsupported parameter value"
-            diagnostics(6, "version: '$version'");
+            \ACDH\FCSSRU\diagnostics(6, "version: '$version'");
           elseif ($version != "1.2")
             //"Unsupported version"
-            diagnostics(5, "version: '$version'");
+            \ACDH\FCSSRU\diagnostics(5, "version: '$version'");
           else
           {
-            if ($xcontext == "")
+            if ($xcontext === "")
             {
-              if ($scanClause == "fcs.resource")
+              if ($scanClause === "fcs.resource")
                 //return switch scan result ==> overview
-                ReturnScan($version);
+                HandleXFormatCases(GetScan($version));
               else
                 //"Unsupported parameter value"
-                diagnostics(6, "scanClause: '$scanClause'");
+                \ACDH\FCSSRU\diagnostics(6, "scanClause: '$scanClause'");
             }
             else
             {
@@ -1103,19 +1141,19 @@ namespace ACDH\FCSSRU\switchAgrregator;
       case "searchRetrieve" :
           if ($query === false)
             //"Mandatory parameter not supplied"
-            diagnostics(7, "query");
+            \ACDH\FCSSRU\diagnostics(7, "query");
           elseif ($version === false)
             //"Mandatory parameter not supplied"
-            diagnostics(7, "version");
+            \ACDH\FCSSRU\diagnostics(7, "version");
           elseif ($query == "")
             //"Unsupported parameter value"
-            diagnostics(6, "query: '$query'");
+            \ACDH\FCSSRU\diagnostics(6, "query: '$query'");
           elseif ($version == "")
             //"Unsupported parameter value"
-            diagnostics(6, "version: '$version'");
+            \ACDH\FCSSRU\diagnostics(6, "version: '$version'");
           elseif ($version != "1.2")
             //"Unsupported version"
-            diagnostics(5, "version: '$version'");
+            \ACDH\FCSSRU\diagnostics(5, "version: '$version'");
           else
           {
             HandleXFormatCases();
@@ -1123,7 +1161,7 @@ namespace ACDH\FCSSRU\switchAgrregator;
       break;
       default:
         //"Unsupported parameter value"
-        diagnostics(6, "operation: '$operation'");
+        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
       break;
     }
   }
