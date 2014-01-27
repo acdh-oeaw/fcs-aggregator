@@ -171,6 +171,9 @@ use \ACDH\FCSSRU\IndentDomDocument;
    */
   function GetNodeValue($node, $tagName)
   {
+     if ($node === null) {
+         return "";
+     }
      $list = $node->getElementsByTagName($tagName);
      if ($list->length != 0)
      {
@@ -218,12 +221,12 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses $xformat 
    */
   function GetFormatId() {
-    global $xformat;
+    global $sru_fcs_params;
 
-    if (stripos($xformat, 'html') !== false) {
+    if (stripos($sru_fcs_params->xformat, 'html') !== false) {
         return "";
     } else {
-        return "-" . $xformat;
+        return "-" . $sru_fcs_params->xformat;
     }
   }
   
@@ -277,28 +280,31 @@ use \ACDH\FCSSRU\IndentDomDocument;
    */
   function GetConfig($context)
   {
+    global $sru_fcs_params;
     global $switchConfig;
     $doc = new \DOMDocument;
     $doc->Load($switchConfig);
 
     $xpath = new \DOMXPath($doc);
-    $query = '//item';
-    $entries = $xpath->query($query);
-
-    foreach ($entries as $entry)
-    {
-       $name = GetNodeValue($entry, "name");
-       if ($name == $context)
-       {
-         $type = GetNodeValue($entry, "type");
-         $uri = GetNodeValue($entry, "uri");
-         $style = GetNodeValue($entry, "style");
-         $ret = array("name" => $name, "type" => $type, "uri" => $uri);
-         if ($style !== "") {
-                $ret["style"] = $style;
+    /* Note that this ignores multiple configurations for the same name ans uses the first occurance! */
+    $entry = $xpath->query("//item[name='$context']")->item(0);
+    $name = GetNodeValue($entry, "name");
+    if ($name == $context) {
+        $type = GetNodeValue($entry, "type");
+        $uri = GetNodeValue($entry, "uri");
+        $ret = array("name" => $name, "type" => $type, "uri" => $uri);
+        $styles = $xpath->query("//item[name='$context']/style");
+        $key_with_format = $sru_fcs_params->operation . GetFormatId();
+        foreach ($styles as $style) {
+            $styleSheet = GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
+            if ($styleSheet !== "") {
+                $ret[$key_with_format] = $styleSheet;
             }
-         return $ret;
+            if ($style->hasAttributes() === false and $style->nodeValue !== "") {
+                $ret["style"] = $style->nodeValue;
+            }
         }
+        return $ret;
     }
 
     global $fcsConfigFound;
@@ -687,7 +693,9 @@ use \ACDH\FCSSRU\IndentDomDocument;
     switch ($operation)
     {
       case "explain" :
-        if (array_key_exists('explain'.$format, $globalStyles))
+        if (array_key_exists('explain'.$format, $configItem))
+          $style = $configItem['explain'.$format];
+        elseif (array_key_exists('explain'.$format, $globalStyles))
           $style = $globalStyles['explain'.$format];
         elseif (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
@@ -696,7 +704,9 @@ use \ACDH\FCSSRU\IndentDomDocument;
 
         return ReplaceLocalHost($style);
       case "scan" :
-        if (array_key_exists('scan'.$format, $globalStyles))
+        if (array_key_exists('scan'.$format, $configItem))
+          $style = $configItem['scan'.$format];
+        elseif (array_key_exists('scan'.$format, $globalStyles))
           $style = $globalStyles['scan'.$format];
         elseif (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
@@ -705,8 +715,10 @@ use \ACDH\FCSSRU\IndentDomDocument;
 
         return ReplaceLocalHost($style);
       case "searchRetrieve" :
-        if (array_key_exists('style'.$format, $configItem))
-          $style = $configItem['style'.$format];
+        if (array_key_exists('style', $configItem))
+          $style = $configItem['style'];
+        elseif (array_key_exists('searchRetrieve'.$format, $configItem))
+          $style = $configItem['searchRetrieve'.$format];
         elseif (array_key_exists('searchRetrieve'.$format, $globalStyles))
           $style = $globalStyles['searchRetrieve'.$format];
         elseif (array_key_exists('default'.$format, $globalStyles))
@@ -715,11 +727,8 @@ use \ACDH\FCSSRU\IndentDomDocument;
           $style == "";
 
         return ReplaceLocalHost($style);
-      default:
-        //"Unsupported parameter value"
-        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
-      break;
     }
+    return "FILE_NOT_FOUND";
   }
 
   /**
@@ -802,9 +811,6 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * </li>
    * </ol>
    * @uses sru_fcs_params
-   * @uses $context
-   * @uses $xformat
-   * @uses $operation
    * @uses GetConfig()
    * @uses GetQueryUrl()
    * @uses ReturnXslT()
@@ -814,85 +820,76 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses ReturnXmlDocument()
    * @param string $xmlString Pass in some string that should be treated instead of fetching something.
    */
-  function HandleXFormatCases($xmlString = null)
-  {
+  function HandleXFormatCases($xmlString = null) {
     global $sru_fcs_params;
-    global $context;
-    global $xformat;
-    global $operation;
 
-    foreach($context as $item)
-    {
-      if ($xmlString === null) {
-          $configItem = GetConfig($item);
-      } else {
-          $configItem = array(
-              "uri" => "internal",
-              "type" => "fcs.resource"
-          );
-      }
-      if ($configItem !== false)
-      {
-        $uri = $configItem["uri"];
-        $type = $configItem['type'];
-
+    foreach ($sru_fcs_params->context as $item) {
         if ($xmlString === null) {
-            $fileName = GetQueryUrl($uri, $item, $type);
+            $configItem = GetConfig($item);
         } else {
-            $fileName = null;
+            $configItem = array(
+                "uri" => "internal",
+                "type" => "fcs.resource"
+            );
         }
+        if ($configItem !== false) {
+            $uri = $configItem["uri"];
+            $type = $configItem['type'];
 
-        if (stripos($sru_fcs_params->xformat, "html") !== false || $sru_fcs_params->xformat === "json")
-        {
             if ($xmlString === null) {
-                $xmlDoc = GetDomDocument($fileName);
+                $fileName = GetQueryUrl($uri, $item, $type);
             } else {
-                $xmlDoc = new \DOMDocument();
-                $xmlDoc->loadXML($xmlString);
+                $fileName = null;
             }
-          if ($xmlDoc !== false)
-          {
-            $xslDoc = GetXslStyleDomDocument($operation, $configItem);
-            if ($xslDoc !== false)
-              ReturnXslT($xmlDoc, $xslDoc, true);
-            else
-              //"Unsupported context set"
-              \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($operation, $configItem) .":  " . $item));
-          }
-          else
-            //"Unsupported context set"
-            \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $fileName));
-        }
-        elseif (stripos($sru_fcs_params->xformat, "xsltproc") !== false)
-        {
-          $proc = new XSLTProcessor();
-          header("content-type: text/plain; charset=UTF-8");
-          print "XSLTPROC ";
-		  if ($proc->hasExsltSupport())
-            print "has Exslt support.\n";
-		  else
-		    print "doesn't have Exslt support!\n";
-        }
-        elseif (stripos($sru_fcs_params->xformat, "xsl") !== false)
-        {
-          // this option is more or less only for debugging (to see the xsl used)
-          $style = GetXslStyle($operation, $configItem);
-          ReturnXmlDocument($style, "content-type: text/xml; charset=UTF-8");
-        }
-        elseif (stripos($sru_fcs_params->xformat, "img") !== false)
-          ReturnSomeFile($fileName, "content-type: image/jpg");
-        else
-          ReturnXmlDocument($fileName, $xmlString);
-      }
-      else
-      {
-        //"Unsupported context set"
-        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $item));
-      }
-    }
-  }
 
-  \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
+            if (stripos($sru_fcs_params->xformat, "html") !== false || $sru_fcs_params->xformat === "json") {
+                if ($xmlString === null) {
+                    $xmlDoc = GetDomDocument($fileName);
+                } else {
+                    $xmlDoc = new \DOMDocument();
+                    $xmlDoc->loadXML($xmlString);
+                }
+                if ($xmlDoc !== false) {
+                    $xslDoc = GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
+                    if ($xslDoc !== false)
+                        ReturnXslT($xmlDoc, $xslDoc, true);
+                    else
+                    //"Unsupported context set"
+                        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
+                } else
+                //"Unsupported context set"
+                    \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $fileName));
+            }
+            elseif (stripos($sru_fcs_params->xformat, "xsltproc") !== false) {
+                $proc = new XSLTProcessor();
+                header("content-type: text/plain; charset=UTF-8");
+                print "XSLTPROC ";
+                if ($proc->hasExsltSupport())
+                    print "has Exslt support.\n";
+                else
+                    print "doesn't have Exslt support!\n";
+            }
+            elseif (stripos($sru_fcs_params->xformat, "xsl") !== false) {
+                // this option is more or less only for debugging (to see the xsl used)
+                $xslDoc = GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
+                if ($xslDoc === false) {
+                    //"Unsupported context set"
+                    \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
+                }
+                ReturnXmlDocument($style->saveXML(), "content-type: text/xml; charset=UTF-8");
+            } elseif (stripos($sru_fcs_params->xformat, "img") !== false)
+                ReturnSomeFile($fileName, "content-type: image/jpg");
+            else
+                ReturnXmlDocument($fileName, $xmlString);
+        }
+        else {
+            //"Unsupported context set"
+            \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $item));
+        }
+    }
+}
+
+\ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
   // params SRU
   /**
    * The operation requested by the client.
@@ -1091,7 +1088,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
 
   //no operation param provided ==> explain
   if ($operation === false)
-    HandleXFormatCases(GetExplain());
+      HandleXFormatCases(GetExplain());
   else
   {
     switch ($operation)
