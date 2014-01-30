@@ -623,6 +623,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * 
    * Sets the response header to $headerStr. If the document can't be fetched upstream
    * a diagnostic message 15 Unsupported context set is returned to the client.
+   * @uses $sru_fcs_param
    * @uses url_exists()
    * @uses ReplaceLocalHost()
    * @uses \ACDH\FCSSRU\diagnostics()
@@ -631,6 +632,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    */
   function ReturnXmlDocument($url, $xmlString = null)
   {
+    global $sru_fcs_params;
     $url = ReplaceLocalHost($url);
     header("content-type: text/xml; charset=UTF-8");
     $xml = new IndentDOMDocument();
@@ -644,13 +646,64 @@ use \ACDH\FCSSRU\IndentDomDocument;
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
         return;
     }
+    if (stripos($sru_fcs_params->xformat, 'tei')) {
+        $xpath = new \DOMXPath($xml);
+        // forcebly register xmlns:tei
+        $xml->createAttributeNS('http://www.tei-c.org/ns/1.0', 'tei:create-ns');
+        $tei = $xpath->query('//fcs:DataView[@type="full"]/tei:*');
+        if ($tei->length === 1) {
+            $newRoot = $tei->item(0);
+        } else {
+            $newRoot = wrapInMinimalTEI($xml, $tei);
+        }
+        $xml->replaceChild($newRoot, $xml->childNodes->item(0));
+    }
     $xml->formatOutput = true;
     $xml->setWhiteSpaceForIndentation("    ")->xmlIndent();
-    $output = $xml->saveXML();
+    $output = str_replace('xmlns:default=', 'xmlns:tei=',
+              str_replace('</default:', '</tei:',
+              str_replace('<default:', '<tei:', $xml->saveXML())));
     echo $output;
 }
-  
-  /**
+
+/**
+ * Wrap multiple TEI result nodes in a minimal TEI document.
+ * @param DOMDocument $xmlDocument
+ * @param DOMNodeList $teiNodeList
+ * @return DOMNode A new root Node TEI
+ */
+function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
+    $newRoot = $xmlDocument->createElementNs('http://www.tei-c.org/ns/1.0', 'tei:TEI');
+    $teiHeader = $xmlDocument->createDocumentFragment();
+    $teiHeader->appendXML("  <tei:teiHeader xmlns:tei='http://www.tei-c.org/ns/1.0'>
+      <tei:fileDesc>
+         <tei:titleStmt>
+            <tei:title>Generated search result</tei:title>
+         </tei:titleStmt>
+         <tei:publicationStmt>
+            <tei:p>Same as search resource</tei:p>
+         </tei:publicationStmt>
+         <tei:sourceDesc>
+            <tei:p>Dynamically generated born igital resource</tei:p>
+         </tei:sourceDesc>
+      </tei:fileDesc>
+  </tei:teiHeader>");
+    $text = $xmlDocument->createElement('tei:text');
+    $group = $xmlDocument->createElement('tei:group');
+    $text->appendChild($group);
+    $newRoot->appendChild($teiHeader);
+    $newRoot->appendChild($text);
+    foreach ($teiNodeList as $teiElement) {
+        $text = $xmlDocument->createElement('tei:text');
+        $body = $xmlDocument->createElement('tei:body');
+        $body->appendChild($teiElement);
+        $text->appendChild($body);
+        $group->appendChild($text);
+    }
+    return $newRoot;
+}
+
+/**
    * Return a file without processing anything.
    * @todo Check if this is needed and for what purpose.
    * @param string $url
