@@ -650,7 +650,11 @@ use \ACDH\FCSSRU\IndentDomDocument;
         $xpath = new \DOMXPath($xml);
         // forcebly register xmlns:tei
         $xml->createAttributeNS('http://www.tei-c.org/ns/1.0', 'tei:create-ns');
-        $tei = $xpath->query('//fcs:DataView[@type="full"]/tei:*');
+        // forcebly register xmlns:fcs
+        $xml->createAttributeNS('http://clarin.eu/fcs/1.0', 'fcs:create-ns');
+        // forcebly register xmlns:zr
+        $xml->createAttributeNS('http://explain.z3950.org/dtd/2.0/', 'zr:create-ns');
+        $tei = $xpath->query('//fcs:DataView[@type="full"]/tei:*|//zr:description/tei:*');
         if ($tei->length === 1) {
             $newRoot = $tei->item(0);
         } else {
