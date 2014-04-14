@@ -688,7 +688,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             <tei:p>Same as search resource</tei:p>
          </tei:publicationStmt>
          <tei:sourceDesc>
-            <tei:p>Dynamically generated born igital resource</tei:p>
+            <tei:p>Dynamically generated born digital resource</tei:p>
          </tei:sourceDesc>
       </tei:fileDesc>
   </tei:teiHeader>");
@@ -834,10 +834,14 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     if ($useParams) {
         global $switchUrl;
         global $scriptsUrl;
+        global $switchUser;
+        global $switchPW;
         
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
         $proc->setParameter('', 'base_url', $switchUrl);
+        $proc->setParameter('', 'scripts_user', $switchUser);
+        $proc->setParameter('', 'scripts_pw', $switchPW);
     }
 
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
