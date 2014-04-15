@@ -17,14 +17,6 @@
 	 */
     $configName = array();
 
-    $configName["lrp:abacus"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:abacus", "displayText" => "Abacus", "type" => "fcs.resource", "context" => "abacus");
-    $configName["lrp:stb"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:stb", "displayText" => "Schnitzler Tagebuch", "type" => "fcs.resource", "context" => "stb");
-    $configName["lrp:aac-names"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:aac-names", "displayText" => "AAC Namensdatenbank", "type" => "fcs.resource", "context" => "aac-names");
-    $configName["lrp:vicav"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:vicav", "displayText" => "vicav", "type" => "fcs.resource", "context" => "vicav");
-    $configName["lrp:dict-gate"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:dict-gate", "displayText" => "Dictionary Gate", "type" => "fcs.resource", "context" => "dict-gate");
-    $configName["lrp:abacus"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:abacus", "displayText" => "Abacus", "type" => "fcs.resource", "context" => "abacus");
-    $configName["lrp:stb"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:stb", "displayText" => "Schnitzler Tagebuch", "type" => "fcs.resource", "context" => "stb");
-    $configName["lrp:aac-names"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:aac-names", "displayText" => "AAC Namensdatenbank", "type" => "fcs.resource", "context" => "aac-names");
-    $configName["lrp:vicav"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:vicav", "displayText" => "vicav", "type" => "fcs.resource", "context" => "vicav");
-    $configName["lrp:dict-gate"] = array("endPoint" => "http://clarin.aac.ac.at/exist/apps/cr-xq/lrp/fcs", "name" => "lrp:dict-gate", "displayText" => "Dictionary Gate", "type" => "fcs.resource", "context" => "dict-gate");
+	die("The file fcs.resource.config.php needs to be generated once! <br/> Either click <a href='initconfigcache.php'>here </a> or alternatively you can just remove it.");
     
+?>
