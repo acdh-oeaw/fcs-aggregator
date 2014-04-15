@@ -846,6 +846,9 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
 
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
         header("content-type: text/html; charset=UTF-8");
+        header("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");//Dont cache
+        header("Pragma: no-cache");//Dont cache
+        header("Expires: Thu, 19 Nov 1981 08:52:00 GMT");//Make sure it expired in the past (this can be overkill)
     }
     if ($sru_fcs_params->xformat === "json") {
         header("content-type: application/json; charset=UTF-8");
