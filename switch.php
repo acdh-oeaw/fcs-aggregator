@@ -429,8 +429,6 @@ use \ACDH\FCSSRU\IndentDomDocument;
   /**
    * Reads the $explainSwitchTemplate and returns it
    * 
-   * Even this file has to be processed by the template engine to
-   * return e.g. a meaningful host identifier.
    * content-type text/xml and charset UTF-8 are set for the answer.
    * @uses $vlibPath
    * @uses $localhost
@@ -550,6 +548,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
       case "explain":
         //optional
         $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "recordPacking", $recordPacking);
+        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-dataview", $xdataview);
       break;
       case "scan":
         //mandatory
@@ -852,8 +851,9 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     }
     if ($sru_fcs_params->xformat === "json") {
         header("content-type: application/json; charset=UTF-8");
+        header("Access-Control-Allow-Origin: *");
     }
-    print $proc->transformToXML($xmlDoc);
+    print $proc->transformToXml($xmlDoc);
   }
 
   /**
