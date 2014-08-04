@@ -95,20 +95,7 @@
    * @uses GetDefaultStyles()
    * @uses $configName
    * @uses $fcsConfig
-   * @uses $operation
-   * @uses $query
-   * @uses $version
-   * @uses $scanClause
-   * @uses $xcontext
-   * @uses $extraRequestData
-   * @uses $recordPacking
-   * @uses $stylesheet
-   * @uses $responsePosition
-   * @uses $maximumTerms
-   * @uses $startRecord
-   * @uses $maximumRecords
-   * @uses $recordSchema
-   * @uses $resultSetTTL
+   * @uses \ACDH\FCSSRU\$sru_fcs_params
    * @package fcs-aggregator
    */
 
@@ -444,8 +431,8 @@ use \ACDH\FCSSRU\IndentDomDocument;
     global $vlibPath;
 
     require_once $vlibPath;
-    header ("content-type: text/xml; charset=UTF-8");
-        //instantiate template engine with $scanCollectionsTemplate
+
+    //instantiate template engine with $scanCollectionsTemplate
     $tmpl = new vlibTemplate($explainSwitchTemplate);
     
     $tmpl->setVar('hostid', $localhost);
@@ -453,134 +440,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
     
     return $tmpl->grab();
   }
-//delete me
-  /**
-   * Concats $url with the given $paramName and $paramValue
-   * 
-   * @param string url The parameter part of the URL. Initially it's assumed to be just ?
-   * @param string paramName A parameter name to be added.
-   * @param string paramValue A parameter value to be added.
-   * @return string A parameter part of a URL. Can be fed to this function again to add another parameter.
-   */
-  function AddParamToUrl($url, $paramName, $paramValue)
-  {
-    return $url . ($url == "?" ? "" : "&") . "$paramName=$paramValue";
-  }
 
-  /**
-   * Concats $url with the given $paramName and $paramValue
-   * 
-   * Like AddParamToUrl but adds parameter checking.
-   * @param string url The parameter part of the URL. Initially it's assumed to be just ?
-   * @param string paramName A parameter name to be added.
-   * @param string paramValue A parameter value to be added.
-   * @return string A parameter part of a URL. Can be fed to this function again to add another parameter.
-   */
-  function AddParamToUrlIfNotEmpty($url, $paramName, $paramValue)
-  {
-    if (($paramValue !== false) && ($paramValue != ""))
-      return AddParamToUrl($url, $paramName, $paramValue);
-
-    return $url;
-  }
-
-  /**
-   * Generates the query url including all mandatory and optional params
-   * 
-   * @uses $operation
-   * @uses $query
-   * @uses $scanClause
-   * @uses $responsePosition
-   * @uses $maximumTerms
-   * @uses $version
-   * @uses $maximumRecords
-   * @uses $startRecord
-   * @uses $recordPacking
-   * @uses $recordSchema
-   * @uses $resultSetTTL
-   * @uses $stylesheet
-   * @uses $extraRequestData
-   * @uses $xformat
-   * @uses $xdataview
-   * @param string $endPoint The (upstream) endpoint for the query URL
-   * @param string $xcontext The x-context for the query URL
-   * @param string type If "fcs.resource" or "fcs" x-context is used else ignored.
-   * @return string A URL string that can be used to execute the query.
-   */
-  function GetQueryUrl($endPoint, $xcontext, $type)
-  {
-    //get params
-    global $operation;
-    global $query;
-    global $scanClause;
-    global $responsePosition;
-
-    global $maximumTerms;
-    global $version;
-
-    global $maximumRecords;
-    global $startRecord;
-    global $recordPacking;
-    global $recordSchema;
-    global $resultSetTTL;
-
-    global $stylesheet;
-    global $extraRequestData;
-
-    global $xformat;
-	global $xdataview;
-
-    $urlStr = "?";
-
-    if (($type == "fcs.resource") || ($type == "fcs"))
-      $urlStr = AddParamToUrl($urlStr, "x-context", $xcontext);
-
-    //mandatory params for all operations
-    $urlStr =  AddParamToUrl($urlStr, "operation", $operation);
-    $urlStr =  AddParamToUrl($urlStr, "version", $version);
-
-    //optional params for all operations
-    $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "stylesheet", $stylesheet);
-    $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "extraRequestData", $extraRequestData);
-
-    switch ($operation )
-    {
-      case "explain":
-        //optional
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "recordPacking", $recordPacking);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-dataview", $xdataview);
-      break;
-      case "scan":
-        //mandatory
-        $urlStr =  AddParamToUrl($urlStr, "scanClause", $scanClause);
-        //optional
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "responsePosition", $responsePosition);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "maximumTerms", $maximumTerms);
-      break;
-      case "searchRetrieve":
-        //mandatory
-        $urlStr =  AddParamToUrl($urlStr, "query", $query);
-        //optional
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "startRecord", $startRecord);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "maximumRecords", $maximumRecords);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "recordPacking", $recordPacking);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "recordSchema", $recordSchema);
-        $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "resultSetTTL", $resultSetTTL);
-		
-	$urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-dataview", $xdataview);
-        
-        if (stripos($xformat, "html")=== false)
-          $urlStr =  AddParamToUrlIfNotEmpty($urlStr, "x-format", $xformat);
-      break;
-      default:
-        //"Unsupported parameter value"
-        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
-      break;
-    }
-
-    return $endPoint . $urlStr;
-  }
-// delete me
   /**
    * To speed up local queries the local servername (contained in $localhost) is replaced
    * by the term "127.0.0.1"
@@ -633,7 +493,9 @@ use \ACDH\FCSSRU\IndentDomDocument;
   {
     global $sru_fcs_params;
     $url = ReplaceLocalHost($url);
-    header("content-type: text/xml; charset=UTF-8");
+    if ($sru_fcs_params->recordPacking !== 'raw') {
+        header("content-type: text/xml; charset=UTF-8");
+    }
     $xml = new IndentDOMDocument();
     if (($url === "") && ($xmlString !== null)) {
         $xml->loadXML($xmlString);       
@@ -717,11 +579,12 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
 
     if (url_exists($url))
     {
-      if ($headerStr != "")
-        header ($headerStr);
-      readfile($url);
-    }
-    else
+        if ($sru_fcs_params->recordPacking !== 'raw') {
+            if ($headerStr != "")
+                header($headerStr);
+            readfile($url);
+        }
+    } else
     //"Unsupported context set"
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
 }
@@ -842,7 +705,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         $proc->setParameter('', 'scripts_user', $switchUser);
         $proc->setParameter('', 'scripts_pw', $switchPW);
     }
-
+    if ($sru_fcs_params->recordPacking !== 'raw') {
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
         header("content-type: text/html; charset=UTF-8");
         header("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");//Dont cache
@@ -852,6 +715,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     if ($sru_fcs_params->xformat === "json") {
         header("content-type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Origin: *");
+    }
     }
     print $proc->transformToXml($xmlDoc);
   }
@@ -901,7 +765,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             $type = $configItem['type'];
 
             if ($xmlString === null) {
-                $fileName = GetQueryUrl($uri, $item, $type);
+                $fileName = $sru_fcs_params->GetQueryUrl($uri, $item, $type);
             } else {
                 $fileName = null;
             }
@@ -926,7 +790,9 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             }
             elseif (stripos($sru_fcs_params->xformat, "xsltproc") !== false) {
                 $proc = new XSLTProcessor();
+                if ($sru_fcs_params->recordPacking !== 'raw') {
                 header("content-type: text/plain; charset=UTF-8");
+                }
                 print "XSLTPROC ";
                 if ($proc->hasExsltSupport())
                     print "has Exslt support.\n";
@@ -952,277 +818,79 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         }
     }
 }
-
+// Set up the parameter object
 \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
-  // params SRU
-  /**
-   * The operation requested by the client.
-   * 
-   * Mandatory. In strict mode a diagnostic error message is shown.<br/>
-   * Passed as HTTP GET parameter "operation". If $sruMode is "strict" this is set to false if 
-   * the paramter is missing else it's assumed to be "explain" <br/>
-   * See also: {@link http://www.loc.gov/standards/sru/specs/index.html}
-   * @uses $sruMode
-   * @global string|bool $operation
-   */
-  if (isset($_GET['operation'])) $operation = $_GET["operation"]; else $operation = ($sruMode=="strict") ? false : "explain";
-  
-  /**
-   * Contains a query expressed in CQL to be processed by the server
-   * 
-   * See {@link http://www.loc.gov/standards/sru/specs/cql.html CQL}.<br/>
-   * Mandatory. In strict mode a diagnostic error message is shown.<br/>
-   * Passed as HTTP GET parameter "query".
-   * If $sruMode is "strict" this is set to false if the paramter is missing else it's assumed to be ""
-   * @uses $sruMode
-   * @global string|bool $query
-   */
-  if (isset($_GET['query'])) $query = trim($_GET['query']); else $query = ($sruMode=="strict") ? false : "";
-
-  /**
-   * The index to be browsed and the start point within it, expressed as a complete index, relation, term clause in CQL
-   * 
-   * See {@link http://www.loc.gov/standards/sru/specs/cql.html CQL}.<br/>
-   * Mandatory. In strict mode a diagnostic error message is shown.<br/>
-   * Passed as HTTP GET parameter "scanClause".
-   * If $sruMode is "strict" this is set to false if the paramter is missing else it's assumed to be ""
-   * @uses $sruMode
-   * @global string|bool $scanClause
-   */
-  if (isset($_GET['scanClause'])) $scanClause = trim($_GET['scanClause']); else $scanClause = ($sruMode=="strict") ? false : "";
-  
-  /**
-   * The position within the list of terms returned where the client would like the start term to occur
-   * If the position given is 0, then the term should be immediately before the first term in the response.
-   * If the position given is 1, then the term should be first in the list, and so forth up to the number of terms
-   * requested plus 1, meaning that the term should be immediately after the last term in the response,
-   * even if the number of terms returned is less than the number requested.
-   * The range of values is 0 to the number of terms requested plus 1. The default value is 1.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "responsePosition". If the parameter is missing "" is assumed.
-   * @global string $responsePosition
-   */
-  if (isset($_GET['responsePosition'])) $responsePosition = trim($_GET['responsePosition']); else $responsePosition = "";
-
-  /**
-   * The number of terms which the client requests be returned
-   * 
-   * The actual number returned may be less than this, for example if the end of the term list is reached,
-   * but may not be more. The explain record for the database may indicate the maximum number of terms which
-   * the server will return at once. All positive integers are valid for this parameter. If not specified,
-   * the default is server determined.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "maximumTerms". If the parameter is missing "10" is assumed.
-   * @global string $maximumTerms
-   */
-  if (isset($_GET['maximumTerms'])) $maximumTerms = trim($_GET['maximumTerms']); else $maximumTerms = "100";
-
-  /**
-   * The version of the request, and a statement by the client that it wants the response to be less than, or preferably equal to, that version
-   * 
-   * See {@link http://www.loc.gov/standards/sru/specs/common.html#version Versions}.<br/>
-   * Mandatory. In strict mode a diagnostic error message is shown.<br/>
-   * Passed as HTTP GET parameter "version".
-   * If $sruMode is "strict" this is set to false if the paramter is missing else it's assumed to be "1.2"
-   * @uses $sruMode
-   * @global string|bool $version
-   */
-  if (isset($_GET['version'])) $version = trim($_GET['version']); else $version = ($sruMode=="strict") ? false : "1.2";
-
-  /**
-   * The number of records requested to be returned
-   * The value must be 0 or greater. Default value if not supplied is determined by the server.
-   * The server MAY return less than this number of records, for example if there are fewer matching records
-   * than requested, but MUST NOT return more than this number of records.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "maximumRecords". If the parameter is missing "10" is assumed.
-   * @global string $maximumRecords
-   */
-  if (isset($_GET['maximumRecords'])) $maximumRecords = trim($_GET['maximumRecords']); else $maximumRecords = "10";
-
-  /**
-   * The position within the sequence of matched records of the first record to be returned
-   * 
-   * The first position in the sequence is 1. The value supplied MUST be greater than 0.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "startRecord". If the parameter is missing "1" is assumed.
-   * @global string $startRecord
-   */  
-  if (isset($_GET['startRecord'])) $startRecord = trim($_GET['startRecord']); else $startRecord = "1";
-  
-  /**
-   * A string to determine how the record should be escaped in the response
-   * 
-   * Defined values are 'string' and 'xml'. The default is
-   * 'xml'. See {@link http://www.loc.gov/standards/sru/specs/search-retrieve.html#records Records}.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "recordPacking". If the parameter is missing "xml" is assumed.
-   * @global string $recordPacking
-   */
-  if (isset($_GET['recordPacking'])) $recordPacking = trim($_GET['recordPacking']); else $recordPacking = "xml";
-  
-  /**
-   * The schema in which the records MUST be returned
-   * 
-   * The value is the URI identifier for the schema or the short name for it
-   * published by the server. The default value if not supplied is
-   * determined by the server. See {@link http://www.loc.gov/standards/sru/resources/schemas.html Record Schemas}.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "recordSchema". If the parameter is missing "" is assumed.
-   * @global string $recordSchema
-   */  
-  if (isset($_GET['recordSchema'])) $recordSchema = trim($_GET['recordSchema']); else $recordSchema = "";
-
-  /**
-   * A URL for a stylesheet
-   * 
-   * The client requests that the server simply return this URL in the response.<br/>
-   * See {@link http://www.loc.gov/standards/sru/specs/common.html#stylesheet Stylesheets}.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "stylesheet". If the parameter is missing "" is assumed.
-   * @global string $stylesheet
-   */ 
-  if (isset($_GET['stylesheet'])) $stylesheet = trim($_GET['stylesheet']); else $stylesheet = "";
-
-  /**
-   * Provides additional information for the server to process.
-   * 
-   * See {@link http://www.loc.gov/standards/sru/specs/common.html#extraData Extensions}.<br/>
-   * Optional.<br/>
-   * Passed as HTTP GET parameter "extraRequestData". If the parameter is missing "" is assumed.
-   * @global string $extraRequestData
-   */
-  if (isset($_GET['extraRequestData'])) $extraRequestData = trim($_GET['extraRequestData']); else $extraRequestData = "";
-  /**
-   * The number of seconds for which the client requests that the result set created should be maintained
-   * 
-   * The server MAY choose not to fulfil this request, and may respond with a different number of seconds.
-   * If resultSetTTL is not supplied then the server will determine the value.
-   * See {@link http://www.loc.gov/standards/sru/specs/search-retrieve.html#resultsets Result Sets}.
-   * 
-   * Passed as HTTP GET parameter "extraRequestData". If the parameter is missing "" is assumed.
-   * @global string $resultSetTTL
-   */
-  if (isset($_GET['resultSetTTL'])) $resultSetTTL = trim($_GET['resultSetTTL']); else $resultSetTTL = "";
-
-  //additional params - non SRU
-  /**
-   * The x-context parameter passed by the client.
-   * 
-   * Used to specify the resources for which the operation is to be performed. Resources are separated by ",".
-   * An extension to the SRU standard parameter set. Inspired by x-cmd-context where cmd stands for Component MetaData.<br/>
-   * Passed as HTTP GET parameter "x-context". If the parameter is missing HTTP GET parameter "x-cmd-context" takes its place. If both are missing "" is assumed.
-   * See also: {@link http://www.clarin.eu/fcs}<br/>
-   * {@link http://www.clarin.eu/cmdi}
-   * @global string $xcontext
-   */
-  if (isset($_GET['x-context'])) $xcontext = $_GET["x-context"]; else $xcontext = "";
-  if (isset($_GET['x-cmd-context']) && $xcontext === "") $xcontext = $_GET['x-cmd-context'];
-
-  /**
-   * The x-format parameter passed by the client
-   * 
-   * Used to specify the response format expected by the client. Possible values include "html", "xsltproc", "xsl" and "img".
-   * On other values XML is assumed as requested response format.
-   * FIXME: and others???
-   * @global string $xformat
-   */  
-  if (isset($_GET['x-format'])) $xformat = trim($_GET['x-format']); else $xformat = "";
-  
-  /**
-   * The x-dataview parameter passed by the client
-   * 
-   * Used to specify which views on the result shall be returned as response.
-   * Possible values include "kwic", "full", "title", "facs", "navigation" and "xmlescaped".
-   * On other values "the result is undefined "kwic" is assumed.
-   * @global string $xdataview
-   */ 
-  if (isset($_GET['x-dataview'])) $xdataview = trim($_GET['x-dataview']); else $xdataview = "kwic";
-
-  /**
-   * All contexts/resources given by the HTTP GET parameter "x-context" as array
-   *
-   * @uses $xcontext
-   * @global array $context
-   */
-  $context = explode(",", $xcontext);
 
   //load default xsl style sheets from $switchConfig, uses $xformat
   GetDefaultStyles();
 
   //no operation param provided ==> explain
-  if ($operation === false)
-      HandleXFormatCases(GetExplain());
-  else
-  {
-    switch ($operation)
-    {
-      case "explain" :
-          if ($xcontext == "")
-            HandleXFormatCases(GetExplain());
-          else
-          {
-            HandleXFormatCases();
-          }
-      break;
-      case "scan" :
-          if ($scanClause === false)
+  if ($sru_fcs_params->operation === false) {
+    HandleXFormatCases(GetExplain());
+} else {
+    switch ($sru_fcs_params->operation) {
+        case "explain" :
+            if ($sru_fcs_params->xcontext == "") {
+                HandleXFormatCases(GetExplain());
+            } else {
+                HandleXFormatCases();
+            }
+            break;
+        case "scan" :
+            if ($sru_fcs_params->scanClause === false) {
             //"Mandatory parameter not supplied"
-            \ACDH\FCSSRU\diagnostics(7, "scanClause");
-          elseif ($version === false)
+                \ACDH\FCSSRU\diagnostics(7, "scanClause");
+            } elseif ($sru_fcs_params->version === false) {
             //"Mandatory parameter not supplied"
-            \ACDH\FCSSRU\diagnostics(7, "version");
-          elseif ($scanClause == "")
+                \ACDH\FCSSRU\diagnostics(7, "version");
+            } elseif ($sru_fcs_params->scanClause == "") {
             //"Unsupported parameter value"
-            \ACDH\FCSSRU\diagnostics(6, "scanClause: '$scanClause'");
-          elseif ($version == "")
+                \ACDH\FCSSRU\diagnostics(6, "no scanClause specified");
+            } elseif ($sru_fcs_params->version == "") {
             //"Unsupported parameter value"
-            \ACDH\FCSSRU\diagnostics(6, "version: '$version'");
-          elseif ($version != "1.2")
+                \ACDH\FCSSRU\diagnostics(6, "no version specified.");
+            } elseif ($sru_fcs_params->version != "1.2") {
             //"Unsupported version"
-            \ACDH\FCSSRU\diagnostics(5, "version: '$version'");
-          else
-          {
-            if ($xcontext === "")
-            {
-              if ($scanClause === "fcs.resource")
-                //return switch scan result ==> overview
-                HandleXFormatCases(GetScan($version));
-              else
-                //"Unsupported parameter value"
-                \ACDH\FCSSRU\diagnostics(6, "scanClause: '$scanClause'");
+                \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
+            } else {
+                if ($sru_fcs_params->xcontext === "") {
+                    if ($sru_fcs_params->scanClause === "fcs.resource") {
+                        //return switch scan result ==> overview
+                        HandleXFormatCases(GetScan($sru_fcs_params->version));
+                    } else {
+                    //"Unsupported parameter value"
+                        \ACDH\FCSSRU\diagnostics(6, "scanClause: '$sru_fcs_params->scanClause'");
+                    }
+                }
+                else {
+                    HandleXFormatCases();
+                }
             }
-            else
-            {
-              HandleXFormatCases();
-            }
-          }
 
-      break;
-      case "searchRetrieve" :
-          if ($query === false)
+            break;
+        case "searchRetrieve" :
+            if ($sru_fcs_params->query === false) {
             //"Mandatory parameter not supplied"
-            \ACDH\FCSSRU\diagnostics(7, "query");
-          elseif ($version === false)
+                \ACDH\FCSSRU\diagnostics(7, "query");
+            } elseif ($sru_fcs_params->version === false) {
             //"Mandatory parameter not supplied"
-            \ACDH\FCSSRU\diagnostics(7, "version");
-          elseif ($query == "")
+                \ACDH\FCSSRU\diagnostics(7, "version");
+            } elseif ($sru_fcs_params->query == "") {
             //"Unsupported parameter value"
-            \ACDH\FCSSRU\diagnostics(6, "query: '$query'");
-          elseif ($version == "")
+                \ACDH\FCSSRU\diagnostics(6, "no query specified");
+            } elseif ($sru_fcs_params->version == "") {
             //"Unsupported parameter value"
-            \ACDH\FCSSRU\diagnostics(6, "version: '$version'");
-          elseif ($version != "1.2")
-            //"Unsupported version"
-            \ACDH\FCSSRU\diagnostics(5, "version: '$version'");
-          else
-          {
-            HandleXFormatCases();
-          }
-      break;
-      default:
-        //"Unsupported parameter value"
-        \ACDH\FCSSRU\diagnostics(6, "operation: '$operation'");
-      break;
+                \ACDH\FCSSRU\diagnostics(6, "no version specified");
+            } elseif ($sru_fcs_params->version != "1.2") {
+                //"Unsupported version"
+                \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
+            } else {
+                HandleXFormatCases();
+            }
+            break;
+        default:
+            //"Unsupported parameter value"
+            \ACDH\FCSSRU\diagnostics(6, "operation: '$sru_fcs_params->operation'");
+            break;
     }
-  }
+}
