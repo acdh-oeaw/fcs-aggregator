@@ -99,10 +99,10 @@
    * @package fcs-aggregator
    */
 
-namespace ACDH\FCSSRU\switchAgrregator;
+namespace ACDH\FCSSRU\switchAggregator;
 
-include '../utils-php/EpiCurl.php';
-include '../utils-php/IndentDomDocument.php';
+include __DIR__ . '/../utils-php/EpiCurl.php';
+include __DIR__ . '/../utils-php/IndentDomDocument.php';
 
 use jmathai\phpMultiCurl\EpiCurl;
 use \ACDH\FCSSRU\IndentDomDocument;
@@ -130,7 +130,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
   /**
    * Load the common config file
    */
-  include_once "../utils-php/common.php";
+  include_once __DIR__ . '/../utils-php/common.php';
   
   use clausvb\vlib\vlibTemplate;
 
@@ -148,7 +148,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
     include $fcsConfig;
     $fcsConfigFound = true;
   }
-
+class FCSSwitch {
   /**
    * Get the node value of the first occurrence of $tagName
    * in the children of $node
@@ -156,7 +156,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $tagName The tag to search for.
    * @return string The value of the tag if found else the empty string "" is returned.
    */
-  function GetNodeValue($node, $tagName)
+  protected function GetNodeValue($node, $tagName)
   {
      if ($node === null) {
          return "";
@@ -180,7 +180,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $attrValue The attribure value to search for.
    * @return string Returns the node value of the first fitting tag with $tagName with $attr which has $attrValue
    */
-  function GetNodeValueWithAttribute($node, $tagName, $attr, $attrValue)
+  protected function GetNodeValueWithAttribute($node, $tagName, $attr, $attrValue)
   {
      $list = $node->getElementsByTagName($tagName);
      $idx = 0;
@@ -207,7 +207,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * Construct format names to be attached to operation to look up a stylesheet
    * @uses $xformat 
    */
-  function GetFormatId() {
+  protected function GetFormatId() {
     global $sru_fcs_params;
 
     if (stripos($sru_fcs_params->xformat, 'html') !== false) {
@@ -226,7 +226,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses $globalStyles
    * @uses $xformat
    */
-  function GetDefaultStyles()
+  protected function GetDefaultStyles()
   {
     global $switchConfig;
     global $globalStyles;
@@ -238,7 +238,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
     $query = '//styles';
     $entries = $xpath->query($query);
 
-    $format = GetFormatId();
+    $format = $this->GetFormatId();
     
     foreach ($entries as $entry)
     {
@@ -246,7 +246,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
       foreach ($keys as $key)
       {
         $key_with_format = $key . $format;
-        $hstr = GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
+        $hstr = $this->GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
         if ($hstr != "")
           $globalStyles[$key_with_format] = $hstr;
       }
@@ -265,7 +265,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $context An internal ID for a resource.
    * @return array|false An array (a map) containing "name" (the internal id), "type" (of the resource), "uri" and "style" (the stylesheet to use with the resource).
    */
-  function GetConfig($context)
+  protected function GetConfig($context)
   {
     global $sru_fcs_params;
     global $switchConfig;
@@ -275,15 +275,15 @@ use \ACDH\FCSSRU\IndentDomDocument;
     $xpath = new \DOMXPath($doc);
     /* Note that this ignores multiple configurations for the same name ans uses the first occurance! */
     $entry = $xpath->query("//item[name='$context']")->item(0);
-    $name = GetNodeValue($entry, "name");
+    $name = $this->GetNodeValue($entry, "name");
     if ($name == $context) {
-        $type = GetNodeValue($entry, "type");
-        $uri = GetNodeValue($entry, "uri");
+        $type = $this->GetNodeValue($entry, "type");
+        $uri = $this->GetNodeValue($entry, "uri");
         $ret = array("name" => $name, "type" => $type, "uri" => $uri);
         $styles = $xpath->query("//item[name='$context']/style");
-        $key_with_format = $sru_fcs_params->operation . GetFormatId();
+        $key_with_format = $sru_fcs_params->operation . $this->GetFormatId();
         foreach ($styles as $style) {
-            $styleSheet = GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
+            $styleSheet = $this->GetNodeValueWithAttribute($entry, "style", "operation", $key_with_format);
             if ($styleSheet !== "") {
                 $ret[$key_with_format] = $styleSheet;
             }
@@ -324,7 +324,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses $configName
    * @return array An array that contains for every resource the "name" (the internal id) and the "label" (the human intelligable name).
    */
-  function GetCompleteConfig()
+  protected function GetCompleteConfig()
   {
     global $switchConfig;
     global $fcsConfigFound;
@@ -344,9 +344,9 @@ use \ACDH\FCSSRU\IndentDomDocument;
     foreach ($entries as $entry)
     {
        //add name and label to $configArray
-       $name = GetNodeValue($entry, "name");
-       $label = GetNodeValue($entry, "label");
-       $type = GetNodeValue($entry, "type");
+       $name = $this->GetNodeValue($entry, "name");
+       $label = $this->GetNodeValue($entry, "label");
+       $type = $this->GetNodeValue($entry, "type");
        array_push($configArray, array("name" => $name, "label" => $label));
 
        if (($type == "fcs.resource") && ($fcsConfigFound))
@@ -368,11 +368,11 @@ use \ACDH\FCSSRU\IndentDomDocument;
   }
 
   /**
-   * Analog to file_exists() this function tests if a given $url does exist
+   * Analog to file_exists() this protected function tests if a given $url does exist
    * @param string $url A URL to be testes.
    * @return bool If $url is reachable or not.
    */
-  function url_exists($url)
+  protected function url_exists($url)
   {
       $handle = @fopen($url,'r');
       return ($handle !== false);
@@ -386,7 +386,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses $vlibPath
    * @param string $version A version that is inserted into the template.
    */
-  function GetScan($version)
+  protected function GetScan($version)
   {
     global $scanCollectionsTemplate;
     global $vlibPath;
@@ -399,7 +399,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
     $tmpl->setvar('version', $version);
 
     //get all configured endpoints
-    $configArray = GetCompleteConfig();
+    $configArray = $this->GetCompleteConfig();
 
     //fill array for template loop
     $collection = array();
@@ -423,7 +423,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @uses $explainSwitchXmlInfoSnippet
    * @return string An XML description of this service.
    */
-  function GetExplain()
+  protected function GetExplain()
   {
     global $explainSwitchTemplate;
     global $explainSwitchXmlInfoSnippet;
@@ -448,7 +448,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $url A URL as input.
    * @return string The input URL with the hostname set to 127.0.0.1 if it matches $localhost.
    */
-  function ReplaceLocalHost($url)
+  protected function ReplaceLocalHost($url)
   {
     global $localhost;
     return str_replace($localhost, "127.0.0.1",  $url);
@@ -462,11 +462,11 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $url A URL from which the document should be fetched.
    * @return DOMDocument|false Returns either the XML DOM representation or false.
    */
-  function GetDomDocument($url)
+  protected function GetDomDocument($url)
   {
-    $url = ReplaceLocalHost($url);
+    $url = $this->ReplaceLocalHost($url);
 
-    if (url_exists($url))
+    if ($this->url_exists($url))
     {
       $xmlDoc = new \DOMDocument();
       $xmlDoc->load($url);
@@ -489,17 +489,17 @@ use \ACDH\FCSSRU\IndentDomDocument;
    * @param string $url The URL form which the XML should be fetched.
    * @param string $xmlString An XML snippet that is to be used if there is no URL.
    */
-  function ReturnXmlDocument($url, $xmlString = null)
+  protected function ReturnXmlDocument($url, $xmlString = null)
   {
     global $sru_fcs_params;
-    $url = ReplaceLocalHost($url);
+    $url = $this->ReplaceLocalHost($url);
     if ($sru_fcs_params->recordPacking !== 'raw') {
         header("content-type: text/xml; charset=UTF-8");
     }
     $xml = new IndentDOMDocument();
     if (($url === "") && ($xmlString !== null)) {
         $xml->loadXML($xmlString);       
-    } elseif (url_exists($url)) {
+    } elseif ($this->url_exists($url)) {
         $upstream = EpiCurl::getInstance()->addCurl(curl_init($url));
         $xml->loadXML($upstream->data);
     } else {
@@ -537,7 +537,7 @@ use \ACDH\FCSSRU\IndentDomDocument;
  * @param DOMNodeList $teiNodeList
  * @return DOMNode A new root Node TEI
  */
-function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
+protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     $newRoot = $xmlDocument->createElementNs('http://www.tei-c.org/ns/1.0', 'tei:TEI');
     $teiHeader = $xmlDocument->createDocumentFragment();
     $teiHeader->appendXML("  <tei:teiHeader xmlns:tei='http://www.tei-c.org/ns/1.0'>
@@ -574,7 +574,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param string $url
    * @param string $headerStr
    */
-  function ReturnSomeFile($url, $headerStr) {
+  protected function ReturnSomeFile($url, $headerStr) {
     $url = ReplaceLocalHost($url);
 
     if (url_exists($url))
@@ -603,11 +603,11 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param array $configItem A array (a map) that has a "style" key. Used for passing a style for the "searchRetrieve" operation.
    * @return string The URL of the style sheet. If it's located on the local host the URL contains 127.0.0.1 instead of the real domain name.
    */
-  function GetXslStyle($operation, $configItem)
+  protected function GetXslStyle($operation, $configItem)
   {
     global $globalStyles;
     
-    $format = GetFormatId();
+    $format = $this->GetFormatId();
 
     switch ($operation)
     {
@@ -621,7 +621,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         else
           $style == "";
 
-        return ReplaceLocalHost($style);
+        return $this->ReplaceLocalHost($style);
       case "scan" :
         if (array_key_exists('scan'.$format, $configItem))
           $style = $configItem['scan'.$format];
@@ -632,7 +632,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         else
           $style == "";
 
-        return ReplaceLocalHost($style);
+        return $this->ReplaceLocalHost($style);
       case "searchRetrieve" :
         if (array_key_exists('style', $configItem))
           $style = $configItem['style'];
@@ -645,7 +645,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         else
           $style == "";
 
-        return ReplaceLocalHost($style);
+        return $this->ReplaceLocalHost($style);
     }
     return "FILE_NOT_FOUND";
   }
@@ -659,13 +659,13 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param array $configItem A array (a map) that has a "style" key. Used for passing a style for the "searchRetrieve" operation.
    * @return DOMDocument A XSL DOM representation of the XSL style sheet document.  
    */
-  function GetXslStyleDomDocument($operation, $configItem)
+  protected function GetXslStyleDomDocument($operation, $configItem)
   {
     if ($operation === false) {
         $operation = "explain";
     }
-    $xslUrl = GetXslStyle($operation, $configItem);
-    return GetDomDocument($xslUrl);
+    $xslUrl = $this->GetXslStyle($operation, $configItem);
+    return $this->GetDomDocument($xslUrl);
   }
 
   /**
@@ -687,7 +687,7 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param DOMDocument|SimpleXMLElement $xslDoc The XSL style sheet used for the transformation.
    * @param bool $useParams If set $xformat and $scriptsUrl are passed to the XSL processor as parameters "format" and "scripts_url".
    */
-  function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
+  protected function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
     global $sru_fcs_params;
     
     $proc = new \XSLTProcessor();
@@ -701,6 +701,8 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
+        // for debugging purpose so switch doesn't call itself.
+//        $proc->setParameter('', 'contexts_url', '');
         $proc->setParameter('', 'base_url', $switchUrl);
         $proc->setParameter('', 'scripts_user', $switchUser);
         $proc->setParameter('', 'scripts_pw', $switchPW);
@@ -748,12 +750,12 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @uses ReturnXmlDocument()
    * @param string $xmlString Pass in some string that should be treated instead of fetching something.
    */
-  function HandleXFormatCases($xmlString = null) {
+  protected function HandleXFormatCases($xmlString = null) {
     global $sru_fcs_params;
 
     foreach ($sru_fcs_params->context as $item) {
         if ($xmlString === null) {
-            $configItem = GetConfig($item);
+            $configItem = $this->GetConfig($item);
         } else {
             $configItem = array(
                 "uri" => "internal",
@@ -772,18 +774,18 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
 
             if (stripos($sru_fcs_params->xformat, "html") !== false || $sru_fcs_params->xformat === "json") {
                 if ($xmlString === null) {
-                    $xmlDoc = GetDomDocument($fileName);
+                    $xmlDoc = $this->GetDomDocument($fileName);
                 } else {
                     $xmlDoc = new \DOMDocument();
                     $xmlDoc->loadXML($xmlString);
                 }
                 if ($xmlDoc !== false) {
-                    $xslDoc = GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
+                    $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
                     if ($xslDoc !== false)
-                        ReturnXslT($xmlDoc, $xslDoc, true);
+                        $this->ReturnXslT($xmlDoc, $xslDoc, true);
                     else
                     //"Unsupported context set"
-                        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
+                        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $this->GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
                 } else
                 //"Unsupported context set"
                     \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $fileName));
@@ -801,16 +803,16 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             }
             elseif (stripos($sru_fcs_params->xformat, "xsl") !== false) {
                 // this option is more or less only for debugging (to see the xsl used)
-                $xslDoc = GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
+                $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
                 if ($xslDoc === false) {
                     //"Unsupported context set"
-                    \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
+                    \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $this->GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
                 }
-                ReturnXmlDocument($style->saveXML(), "content-type: text/xml; charset=UTF-8");
+                $this->ReturnXmlDocument($style->saveXML(), "content-type: text/xml; charset=UTF-8");
             } elseif (stripos($sru_fcs_params->xformat, "img") !== false)
-                ReturnSomeFile($fileName, "content-type: image/jpg");
+                $this->ReturnSomeFile($fileName, "content-type: image/jpg");
             else
-                ReturnXmlDocument($fileName, $xmlString);
+                $this->ReturnXmlDocument($fileName, $xmlString);
         }
         else {
             //"Unsupported context set"
@@ -818,79 +820,88 @@ function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         }
     }
 }
+
+public function run() {
+        global $sru_fcs_params;
 // Set up the parameter object
-\ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
+        \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
 
-  //load default xsl style sheets from $switchConfig, uses $xformat
-  GetDefaultStyles();
+        //load default xsl style sheets from $switchConfig, uses $xformat
+        $this->GetDefaultStyles();
 
-  //no operation param provided ==> explain
-  if ($sru_fcs_params->operation === false) {
-    HandleXFormatCases(GetExplain());
-} else {
-    switch ($sru_fcs_params->operation) {
-        case "explain" :
-            if ($sru_fcs_params->xcontext == "") {
-                HandleXFormatCases(GetExplain());
-            } else {
-                HandleXFormatCases();
-            }
-            break;
-        case "scan" :
-            if ($sru_fcs_params->scanClause === false) {
-            //"Mandatory parameter not supplied"
-                \ACDH\FCSSRU\diagnostics(7, "scanClause");
-            } elseif ($sru_fcs_params->version === false) {
-            //"Mandatory parameter not supplied"
-                \ACDH\FCSSRU\diagnostics(7, "version");
-            } elseif ($sru_fcs_params->scanClause == "") {
-            //"Unsupported parameter value"
-                \ACDH\FCSSRU\diagnostics(6, "no scanClause specified");
-            } elseif ($sru_fcs_params->version == "") {
-            //"Unsupported parameter value"
-                \ACDH\FCSSRU\diagnostics(6, "no version specified.");
-            } elseif ($sru_fcs_params->version != "1.2") {
-            //"Unsupported version"
-                \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
-            } else {
-                if ($sru_fcs_params->xcontext === "") {
-                    if ($sru_fcs_params->scanClause === "fcs.resource") {
-                        //return switch scan result ==> overview
-                        HandleXFormatCases(GetScan($sru_fcs_params->version));
+        //no operation param provided ==> explain
+        if ($sru_fcs_params->operation === false) {
+            $this->HandleXFormatCases($this->GetExplain());
+        } else {
+            switch ($sru_fcs_params->operation) {
+                case "explain" :
+                    if ($sru_fcs_params->xcontext == "") {
+                        $this->HandleXFormatCases($this->GetExplain());
                     } else {
-                    //"Unsupported parameter value"
-                        \ACDH\FCSSRU\diagnostics(6, "scanClause: '$sru_fcs_params->scanClause'");
+                        $this->HandleXFormatCases();
                     }
-                }
-                else {
-                    HandleXFormatCases();
-                }
-            }
+                    break;
+                case "scan" :
+                    if ($sru_fcs_params->scanClause === false) {
+                        //"Mandatory parameter not supplied"
+                        \ACDH\FCSSRU\diagnostics(7, "scanClause");
+                    } elseif ($sru_fcs_params->version === false) {
+                        //"Mandatory parameter not supplied"
+                        \ACDH\FCSSRU\diagnostics(7, "version");
+                    } elseif ($sru_fcs_params->scanClause == "") {
+                        //"Unsupported parameter value"
+                        \ACDH\FCSSRU\diagnostics(6, "no scanClause specified");
+                    } elseif ($sru_fcs_params->version == "") {
+                        //"Unsupported parameter value"
+                        \ACDH\FCSSRU\diagnostics(6, "no version specified.");
+                    } elseif ($sru_fcs_params->version != "1.2") {
+                        //"Unsupported version"
+                        \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
+                    } else {
+                        if ($sru_fcs_params->xcontext === "") {
+                            if ($sru_fcs_params->scanClause === "fcs.resource") {
+                                //return switch scan result ==> overview
+                                $this->HandleXFormatCases($this->GetScan($sru_fcs_params->version));
+                            } else {
+                                //"Unsupported parameter value"
+                                \ACDH\FCSSRU\diagnostics(6, "scanClause: '$sru_fcs_params->scanClause'");
+                            }
+                        } else {
+                            $this->HandleXFormatCases();
+                        }
+                    }
 
-            break;
-        case "searchRetrieve" :
-            if ($sru_fcs_params->query === false) {
-            //"Mandatory parameter not supplied"
-                \ACDH\FCSSRU\diagnostics(7, "query");
-            } elseif ($sru_fcs_params->version === false) {
-            //"Mandatory parameter not supplied"
-                \ACDH\FCSSRU\diagnostics(7, "version");
-            } elseif ($sru_fcs_params->query == "") {
-            //"Unsupported parameter value"
-                \ACDH\FCSSRU\diagnostics(6, "no query specified");
-            } elseif ($sru_fcs_params->version == "") {
-            //"Unsupported parameter value"
-                \ACDH\FCSSRU\diagnostics(6, "no version specified");
-            } elseif ($sru_fcs_params->version != "1.2") {
-                //"Unsupported version"
-                \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
-            } else {
-                HandleXFormatCases();
+                    break;
+                case "searchRetrieve" :
+                    if ($sru_fcs_params->query === false) {
+                        //"Mandatory parameter not supplied"
+                        \ACDH\FCSSRU\diagnostics(7, "query");
+                    } elseif ($sru_fcs_params->version === false) {
+                        //"Mandatory parameter not supplied"
+                        \ACDH\FCSSRU\diagnostics(7, "version");
+                    } elseif ($sru_fcs_params->query == "") {
+                        //"Unsupported parameter value"
+                        \ACDH\FCSSRU\diagnostics(6, "no query specified");
+                    } elseif ($sru_fcs_params->version == "") {
+                        //"Unsupported parameter value"
+                        \ACDH\FCSSRU\diagnostics(6, "no version specified");
+                    } elseif ($sru_fcs_params->version != "1.2") {
+                        //"Unsupported version"
+                        \ACDH\FCSSRU\diagnostics(5, "version: '$sru_fcs_params->version'");
+                    } else {
+                        $this->HandleXFormatCases();
+                    }
+                    break;
+                default:
+                    //"Unsupported parameter value"
+                    \ACDH\FCSSRU\diagnostics(6, "operation: '$sru_fcs_params->operation'");
+                    break;
             }
-            break;
-        default:
-            //"Unsupported parameter value"
-            \ACDH\FCSSRU\diagnostics(6, "operation: '$sru_fcs_params->operation'");
-            break;
+        }
     }
+}
+
+if (!isset($runner)) {
+    $s = new FCSSwitch();
+    $s->run();
 }
