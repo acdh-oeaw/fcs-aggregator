@@ -101,8 +101,8 @@
 
 namespace ACDH\FCSSRU\switchAggregator;
 
-include __DIR__ . '/../utils-php/EpiCurl.php';
-include __DIR__ . '/../utils-php/IndentDomDocument.php';
+include_once __DIR__ . '/../utils-php/EpiCurl.php';
+include_once __DIR__ . '/../utils-php/IndentDomDocument.php';
 
 use jmathai\phpMultiCurl\EpiCurl;
 use \ACDH\FCSSRU\IndentDomDocument;
@@ -619,7 +619,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         elseif (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
         else
-          $style == "";
+          $style = "";
 
         return $this->ReplaceLocalHost($style);
       case "scan" :
@@ -630,7 +630,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         elseif (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
         else
-          $style == "";
+          $style = "";
 
         return $this->ReplaceLocalHost($style);
       case "searchRetrieve" :
@@ -643,7 +643,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         elseif (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
         else
-          $style == "";
+          $style = "";
 
         return $this->ReplaceLocalHost($style);
     }
@@ -687,7 +687,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param DOMDocument|SimpleXMLElement $xslDoc The XSL style sheet used for the transformation.
    * @param bool $useParams If set $xformat and $scriptsUrl are passed to the XSL processor as parameters "format" and "scripts_url".
    */
-  protected function ReturnXslT($xmlDoc, $xslDoc, $useParams) {
+  protected function ReturnXslT($xmlDoc, $xslDoc, $useParams, $useCallback = true) {
     global $sru_fcs_params;
     
     $proc = new \XSLTProcessor();
@@ -702,7 +702,9 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
         // for debugging purpose so switch doesn't call itself.
-//        $proc->setParameter('', 'contexts_url', '');
+        if ($useCallback === false) {
+            $proc->setParameter('', 'contexts_url', '');
+        }
         $proc->setParameter('', 'base_url', $switchUrl);
         $proc->setParameter('', 'scripts_user', $switchUser);
         $proc->setParameter('', 'scripts_pw', $switchPW);
@@ -719,7 +721,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         header("Access-Control-Allow-Origin: *");
     }
     }
-    print $proc->transformToXml($xmlDoc);
+    return $proc->transformToXml($xmlDoc);
   }
 
   /**
@@ -782,7 +784,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                 if ($xmlDoc !== false) {
                     $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
                     if ($xslDoc !== false)
-                        $this->ReturnXslT($xmlDoc, $xslDoc, true);
+                        print $this->ReturnXslT($xmlDoc, $xslDoc, true);
                     else
                     //"Unsupported context set"
                         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $this->GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
