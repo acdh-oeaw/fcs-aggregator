@@ -104,8 +104,8 @@ namespace ACDH\FCSSRU\switchAggregator;
 include_once __DIR__ . '/../utils-php/EpiCurl.php';
 include_once __DIR__ . '/../utils-php/IndentDomDocument.php';
 
-use jmathai\phpMultiCurl\EpiCurl;
-use \ACDH\FCSSRU\IndentDomDocument;
+use jmathai\phpMultiCurl\EpiCurl,
+    ACDH\FCSSRU\IndentDomDocument;
 
   /**
    * Determines how parameters are checked
