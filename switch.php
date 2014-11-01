@@ -143,7 +143,7 @@ use jmathai\phpMultiCurl\EpiCurl,
   $globalStyles = array ("searchRetrieve" => "", "scan" => "", "explain" => "", "default" => "");
 
   //import fcs configuration cache
-  if (file_exists($fcsConfig))
+  if (isset($fcsConfig) && file_exists($fcsConfig))
   {
     include $fcsConfig;
     $fcsConfigFound = true;
