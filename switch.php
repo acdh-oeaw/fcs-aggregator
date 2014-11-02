@@ -698,6 +698,8 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         global $scriptsUrl;
         global $switchUser;
         global $switchPW;
+        global $switchSiteLogo;
+        global $switchSiteName;
         
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
@@ -708,6 +710,12 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         $proc->setParameter('', 'base_url', $switchUrl);
         $proc->setParameter('', 'scripts_user', $switchUser);
         $proc->setParameter('', 'scripts_pw', $switchPW);
+        if (isset($switchSiteLogo) && $switchSiteLogo !== '') {
+            $proc->setParameter('', 'site_logo', $switchSiteLogo);
+        }
+        if (isset($switchSiteName) && $switchSiteName !== '') {
+            $proc->setParameter('', 'site_name', $switchSiteName);
+        }
     }
     if ($sru_fcs_params->recordPacking !== 'raw') {
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
