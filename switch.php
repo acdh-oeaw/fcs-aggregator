@@ -501,7 +501,8 @@ class FCSSwitch {
         $xml->loadXML($xmlString);       
     } elseif ($this->url_exists($url)) {
         $upstream = EpiCurl::getInstance()->addCurl(curl_init($url));
-        $xml->loadXML($upstream->data);
+        $xmlString = $upstream->data;
+        $xml->loadXML($xmlString);
     } else {
     //"Unsupported context set"
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
@@ -780,7 +781,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             $type = $configItem['type'];
 
             if ($xmlString === null) {
-                $fileName = $sru_fcs_params->GetQueryUrl($uri, $item, $type);
+                $fileName = $sru_fcs_params->GetQueryUrl($uri, $type);
             } else {
                 $fileName = null;
             }
