@@ -212,6 +212,8 @@ class FCSSwitch {
 
     if (stripos($sru_fcs_params->xformat, 'html') !== false) {
         return "";
+    } else if (stripos($sru_fcs_params->xformat, 'csv-') !== false) {
+        return "-csv";
     } else {
         return "-" . $sru_fcs_params->xformat;
     }
@@ -635,13 +637,13 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
 
         return $this->ReplaceLocalHost($style);
       case "searchRetrieve" :
-        if (array_key_exists('style', $configItem))
-          $style = $configItem['style'];
-        elseif (array_key_exists('searchRetrieve'.$format, $configItem))
+        if (array_key_exists('searchRetrieve'.$format, $configItem))
           $style = $configItem['searchRetrieve'.$format];
-        elseif (array_key_exists('searchRetrieve'.$format, $globalStyles))
+        else if (array_key_exists('style', $configItem))
+          $style = $configItem['style'];
+        else if (array_key_exists('searchRetrieve'.$format, $globalStyles))
           $style = $globalStyles['searchRetrieve'.$format];
-        elseif (array_key_exists('default'.$format, $globalStyles))
+        else if (array_key_exists('default'.$format, $globalStyles))
           $style = $globalStyles['default'.$format];
         else
           $style = "";
@@ -727,10 +729,13 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         header("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");//Dont cache
         header("Pragma: no-cache");//Dont cache
         header("Expires: Thu, 19 Nov 1981 08:52:00 GMT");//Make sure it expired in the past (this can be overkill)
-    }
-    if ($sru_fcs_params->xformat === "json") {
+    } else if ($sru_fcs_params->xformat === "json") {
         header("content-type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Origin: *");
+    } else if (stripos($sru_fcs_params->xformat, "csv-") !== false) {
+        header("content-type: text/csv; charset=UTF-8");
+        header("Access-Control-Allow-Origin: *");
+        header("Content-disposition: attachment; filename=vocabulary.csv");
     }
     }
     return $proc->transformToXml($xmlDoc);
@@ -786,7 +791,9 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                 $fileName = null;
             }
 
-            if (stripos($sru_fcs_params->xformat, "html") !== false || $sru_fcs_params->xformat === "json") {
+            if (stripos($sru_fcs_params->xformat, "html") !== false ||
+                    $sru_fcs_params->xformat === "json" ||
+                    stripos($sru_fcs_params->xformat, "csv-") !== false) {
                 if ($xmlString === null) {
                     $xmlDoc = $this->GetDomDocument($fileName);
                 } else {
