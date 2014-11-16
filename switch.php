@@ -508,7 +508,7 @@ class FCSSwitch {
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
         return;
     }
-    if (stripos($sru_fcs_params->xformat, 'tei')) {
+    if (stripos($sru_fcs_params->xformat, 'tei') !== false) {
         $xpath = new \DOMXPath($xml);
         // forcebly register xmlns:tei
         $xml->createAttributeNS('http://www.tei-c.org/ns/1.0', 'tei:create-ns');
