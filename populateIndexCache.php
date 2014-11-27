@@ -48,6 +48,9 @@
   	
     print "ResName --- >  $resName\n";
     $url = $switchUrl."?operation=explain&x-context=".$resName."&version=1.2";
+    if(strpos($url, "//") === 0) {
+      $url = "http:" . $url;
+    }
     print $url;
     $doc = new DOMDocument();
     $doc->load($url);
