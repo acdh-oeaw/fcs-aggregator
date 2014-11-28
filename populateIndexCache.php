@@ -37,6 +37,10 @@
     $dataSet["searchable"] = $entry->attributes->getNamedItem("search")->nodeValue;
     $dataSet["scanable"] = $entry->attributes->getNamedItem("scan")->nodeValue;
     $dataSet["sortable"] = $entry->attributes->getNamedItem("sort")->nodeValue;
+    $nativeAttr = $entry->attributes->getNamedItem("native");
+    if (isset($nativeAttr)) {
+        $dataSet["native"] = $nativeAttr->nodeValue;
+    }
 
     return $dataSet;
   }
