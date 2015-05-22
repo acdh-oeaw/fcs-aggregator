@@ -522,7 +522,7 @@ class FCSSwitch {
         if ($tei->length === 1) {
             $newRoot = $tei->item(0);
         } else {
-            $newRoot = wrapInMinimalTEI($xml, $tei);
+            $newRoot = $this->wrapInMinimalTEI($xml, $tei);
         }
         $xml->replaceChild($newRoot, $xml->childNodes->item(0));
     }
