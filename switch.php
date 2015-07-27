@@ -768,12 +768,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         header("Content-disposition: attachment; filename=vocabulary.csv");
     }
     }
-    try {
+    
+    ErrorOrWarningException::$code_has_known_errors = true;
         $ret = $proc->transformToXml($xmlDoc);
-    } catch (ErrorOrWarningException $exc) {
-        $a = 1;
-    }
-
+    ErrorOrWarningException::$code_has_known_errors = false;
     return $ret;
   }
 

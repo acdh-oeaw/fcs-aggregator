@@ -11,7 +11,7 @@
       <id>1</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/result2view_v1.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/GlossaryOnSRU.php</uri>
+      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/modules/mysqlonsru/GlossaryOnSRU.php</uri>
    </item>
    <item>
       <name>apc_eng_002</name>
@@ -19,16 +19,17 @@
       <id>2</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/result2view_v1.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/GlossaryOnSRU.php</uri>
+      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/modules/mysqlonsru/GlossaryOnSRU.php</uri>
    </item>
    <item>
-      <name>deu_wikt_002</name>
-      <label>Wiktionary</label>
-      <id>3</id>
+      <name>dga_yue_v001</name>
+      <label>Cantonese-Dagaare-English Online Lexicon</label>
+      <id>1</id>
       <type>fcs</type>
-      <!-- <style>http://localhost/corpus_shell/xsl/wiktionary.xsl</style> -->
-      <style>http://localhost/corpus_shell/xsl/result2view_v1.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/WiktionaryOnSRU.php</uri>
+	  <!-- delete skripts:--pwd--@ for unprotected resources else replace --pwd-- with the real password. -->
+      <style>http://skripts:--pwd--@127.0.0.1/dicts/modules/mysqlonsru/GlossaryOnSRU.php?x-context=dga_yue_v001&amp;operation=searchRetrieve&amp;query=rfpid=10</style>
+      <style operation="explain">../../xsl/glossary-explain.xsl</style>
+      <uri>http://skripts:--pwd--@127.0.0.1/dicts/modules/mysqlonsru/GlossaryOnSRU.php</uri>
    </item>
    <item>
       <name>clarin.at:icltt:ddc</name>
@@ -52,7 +53,7 @@
       <id>7</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/profile.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/ProfileOnSRU.php</uri>
+      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/modules/mysqlonsru/ProfileOnSRU.php</uri>
    </item>
 	<item>
       <name>vicav-bib</name>
@@ -60,7 +61,7 @@
       <id>8</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/bibliography.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/BibliographyOnSRU.php</uri>
+      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/modules/mysqlonsru/BibliographyOnSRU.php</uri>
    </item>
 	<item>
       <name>vicav-text</name>
@@ -68,7 +69,7 @@
       <id>9</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/profilesampletext.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/SampleTextOnSRU.php</uri>
+      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/modules/mysqlonsru/SampleTextOnSRU.php</uri>
    </item>
 	<item>
       <name>ids-goethe</name>
@@ -84,7 +85,7 @@
       <id>11</id>
       <type>fcs</type>
       <style>http://localhost/corpus_shell/xsl/result2view_v1.xsl</style>
-      <uri>http://corpus3.aac.ac.at/cs2/corpus_shell/fcs/wrapper/php/GlossaryOnSRU.php</uri>
+      <uri>https://minerva.arz.oeaw.ac.at/cs2/corpus_shell/modules/mysqlonsru/GlossaryOnSRU.php</uri>
    </item>
    <item>
       <name>lrp</name>
