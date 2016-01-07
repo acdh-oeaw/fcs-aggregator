@@ -471,7 +471,14 @@ class FCSSwitch {
     if ($this->url_exists($url))
     {
       $xmlDoc = new \DOMDocument();
-      $xmlDoc->load($url);
+      $oldErrorHandler = set_error_handler("\\ACDH\\FCSSRU\\switchAggregator\\exception_error_handler");
+      try {
+          $xmlDoc->load($url);         
+      } catch (DOMProcessingError $exc) {
+          $this->ReturnSomeFile($url, "content-type: text/plain");
+//          throw $exc;
+      }
+      restore_error_handler();
 
       return $xmlDoc;
     }
@@ -578,15 +585,16 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @param string $headerStr
    */
   protected function ReturnSomeFile($url, $headerStr) {
-    $url = ReplaceLocalHost($url);
+    global $sru_fcs_params;
+    $url = $this->ReplaceLocalHost($url);
 
-    if (url_exists($url))
+    if ($this->url_exists($url))
     {
         if ($sru_fcs_params->recordPacking !== 'raw') {
             if ($headerStr != "")
                 header($headerStr);
-            readfile($url);
         }
+        readfile($url);
     } else
     //"Unsupported context set"
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
@@ -920,6 +928,13 @@ public function run() {
             }
         }
     }
+}
+
+class DOMProcessingError extends \ErrorException{
+}
+
+function exception_error_handler($errno, $errstr, $errfile, $errline ) {
+    throw new DOMProcessingError($errstr, 0, $errno, $errfile, $errline);
 }
 
 if (!isset($runner)) {
