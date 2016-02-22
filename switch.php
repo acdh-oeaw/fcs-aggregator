@@ -378,6 +378,7 @@ class FCSSwitch {
    */
   protected function url_exists($url)
   {
+      $url = preg_replace('/\?.*$/', '', $url);
       $handle = @fopen($url,'r');
       return ($handle !== false);
   }
@@ -483,12 +484,25 @@ class FCSSwitch {
     if ($this->url_exists($url))
     {
       $xmlDoc = new \DOMDocument();
-      $oldErrorHandler = set_error_handler("\\ACDH\\FCSSRU\\switchAggregator\\exception_error_handler");
+//      $oldErrorHandler = set_error_handler("\\ACDH\\FCSSRU\\switchAggregator\\exception_error_handler");
       try {
+//          $ctx = stream_context_create(array('http' =>
+//                array(
+//                   'timeout'  => '180'
+//                )));
+//          $upstream = fopen($url, 'r', false, $ctx);
+//          $xmlString = stream_get_contents($upstream);          
+          $upstream = EpiCurl::getInstance()->addCurl(curl_init($url));
+          $xmlString = $upstream->data;
+          $code = $upstream->code;
+          if (($code === 200) && ($xmlString !== '')) {
+            $xmlDoc->loadXML($xmlString);
+          } else {
           $xmlDoc->load($url);         
+          }
       } catch (DOMProcessingError $exc) {
-          $this->ReturnSomeFile($url, "content-type: text/plain");
-//          throw $exc;
+//          $this->ReturnSomeFile($url, "content-type: text/plain");
+          throw $exc;
       }
       restore_error_handler();
 
@@ -729,8 +743,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     global $sru_fcs_params;
     
     $proc = new \XSLTProcessor();
-    $proc->importStylesheet($xslDoc);
-
+    $importOk = $proc->importStylesheet($xslDoc);
+    if (!$importOk) {
+        throw new XSLTProcessingError('XSL Error!');
+    }
     if ($useParams) {
         global $switchUrl;
         global $scriptsUrl;
@@ -962,6 +978,9 @@ public function run() {
 }
 
 class DOMProcessingError extends \ErrorException{
+}
+
+class XSLTProcessingError extends \ErrorException{
 }
 
 function exception_error_handler($errno, $errstr, $errfile, $errline ) {
