@@ -103,9 +103,11 @@ namespace ACDH\FCSSRU\switchAggregator;
 
 include_once __DIR__ . '/../utils-php/EpiCurl.php';
 include_once __DIR__ . '/../utils-php/IndentDomDocument.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use jmathai\phpMultiCurl\EpiCurl,
-    ACDH\FCSSRU\IndentDomDocument;
+    ACDH\FCSSRU\IndentDomDocument,
+    ACDH\FCSSRU\ErrorOrWarningException;
 
   /**
    * Determines how parameters are checked
@@ -396,7 +398,9 @@ class FCSSwitch {
     require_once $vlibPath;
 
     //instantiate template engine with $scanCollectionsTemplate
+    ErrorOrWarningException::$code_has_known_errors = true;
     $tmpl = new vlibTemplate($scanCollectionsTemplate);
+    ErrorOrWarningException::$code_has_known_errors = false;
 
     $tmpl->setvar('version', $version);
 
@@ -412,7 +416,10 @@ class FCSSwitch {
 
     $tmpl->setloop('collection', $collection);
     //generate xml from template and return it
-    return $tmpl->grab();
+    ErrorOrWarningException::$code_has_known_errors = true;
+    $ret = $tmpl->grab();
+    ErrorOrWarningException::$code_has_known_errors = false;
+    return $ret;
   }
 
   /**
@@ -435,12 +442,17 @@ class FCSSwitch {
     require_once $vlibPath;
 
     //instantiate template engine with $scanCollectionsTemplate
+    ErrorOrWarningException::$code_has_known_errors = true;
     $tmpl = new vlibTemplate($explainSwitchTemplate);
+    ErrorOrWarningException::$code_has_known_errors = false;
     
     $tmpl->setVar('hostid', $localhost);
     $tmpl->setVar('xmlinfosnippet', $explainSwitchXmlInfoSnippet);
     
-    return $tmpl->grab();
+    ErrorOrWarningException::$code_has_known_errors = true;
+    $ret = $tmpl->grab();
+    ErrorOrWarningException::$code_has_known_errors = false;
+    return $ret;
   }
 
   /**
@@ -511,7 +523,11 @@ class FCSSwitch {
     } elseif ($this->url_exists($url)) {
         $upstream = EpiCurl::getInstance()->addCurl(curl_init($url));
         $xmlString = $upstream->data;
-        $xml->loadXML($xmlString);
+        try {
+            $xml->loadXML($xmlString);            
+        } catch (ErrorOrWarningException $exc) {
+            $a = 1;
+        }
     } else {
     //"Unsupported context set"
         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $url));
@@ -529,7 +545,7 @@ class FCSSwitch {
         if ($tei->length === 1) {
             $newRoot = $tei->item(0);
         } else {
-            $newRoot = wrapInMinimalTEI($xml, $tei);
+            $newRoot = $this->wrapInMinimalTEI($xml, $tei);
         }
         $xml->replaceChild($newRoot, $xml->childNodes->item(0));
     }
@@ -676,7 +692,18 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         $operation = "explain";
     }
     $xslUrl = $this->GetXslStyle($operation, $configItem);
-    return $this->GetDomDocument($xslUrl);
+    $ret = $this->GetDomDocument($xslUrl);
+    $ret->createAttributeNS('http://www.w3.org/1999/XSL/Transform', 'xsl:create-ns');
+    $query = new \DOMXPath($ret);
+    $qres = $query->query('//xsl:stylesheet');
+    if (!$qres->item(0)->isSameNode($ret->documentElement)) {      
+        $xslText = str_replace(array('&amp;gt;', '&amp;lt;', '&amp;amp;'),
+                               array( "&gt;", "&lt;" ,"&amp;"),
+                               $qres->item(0)->C14N());
+        $ret = new \DOMDocument();
+        $ret->loadXML($xslText);
+  }
+    return $ret;
   }
 
   /**
@@ -746,7 +773,11 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         header("Content-disposition: attachment; filename=vocabulary.csv");
     }
     }
-    return $proc->transformToXml($xmlDoc);
+    
+    ErrorOrWarningException::$code_has_known_errors = true;
+        $ret = $proc->transformToXml($xmlDoc);
+    ErrorOrWarningException::$code_has_known_errors = false;
+    return $ret;
   }
 
   /**
