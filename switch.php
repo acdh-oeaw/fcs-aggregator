@@ -412,9 +412,15 @@ class FCSSwitch {
     $collection = array();
     foreach ($configArray as $item)
     {
-      array_push($collection, array('name' => $item['name'], 'label' => $item['label']));
+      array_push($collection, array(
+          'name' => $item['name'],
+          'label' => $item['label'],
+          'position' => count($collection) + 1));
     }
-
+    
+    $tmpl->setVar('count', count($configArray));
+    $tmpl->setVar('maximumTerms', count($configArray));
+    $tmpl->setVar('responsePosition', 1);
     $tmpl->setloop('collection', $collection);
     //generate xml from template and return it
     ErrorOrWarningException::$code_has_known_errors = true;
