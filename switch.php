@@ -905,8 +905,6 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
 
 public function run() {
         global $sru_fcs_params;
-// Set up the parameter object
-        \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
 
         //load default xsl style sheets from $switchConfig, uses $xformat
         $this->GetDefaultStyles();
@@ -994,6 +992,8 @@ function exception_error_handler($errno, $errstr, $errfile, $errline ) {
 }
 
 if (!isset($runner)) {
+// Set up the parameter object
+    \ACDH\FCSSRU\getParamsAndSetUpHeader("strict");
     $s = new FCSSwitch();
     $s->run();
 }
