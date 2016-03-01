@@ -751,7 +751,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     $proc = new \XSLTProcessor();
     $importOk = $proc->importStylesheet($xslDoc);
     if (!$importOk) {
-        throw new XSLTProcessingError('XSL Error!');
+        throw new XSLTProcessingError('XSL Error in ' .$xslDoc->documentURI . '!');
     }
     if ($useParams) {
         global $switchUrl;
