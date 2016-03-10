@@ -507,7 +507,13 @@ class FCSSwitch {
           $xmlString = $upstream->data;
           $code = $upstream->code;
           if (($code === 200) && ($xmlString !== '')) {
-            $xmlDoc->loadXML($xmlString);
+              try {
+                $xmlDoc->loadXML($xmlString);
+              } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
+                  $message = $e->getMessage() . "\n" . $xmlString;
+                  throw new ErrorOrWarningException($e->getCode(),
+                  $message, $e->getFile(), $e->getLine(), $e->getContext());
+              }
           } else {
           $xmlDoc->load($url);         
           }
@@ -861,7 +867,12 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                     $sru_fcs_params->xformat === "json" ||
                     stripos($sru_fcs_params->xformat, "csv-") !== false) {
                 if ($xmlString === null) {
-                    $xmlDoc = $this->GetDomDocument($fileName);
+                    try {
+                      $xmlDoc = $this->GetDomDocument($fileName);
+                    } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
+                      $xmlDoc = false;
+                      $fileName .= '\n' . $e->getMessage();
+                    }
                 } else {
                     $xmlDoc = new \DOMDocument();
                     $xmlDoc->loadXML($xmlString);
