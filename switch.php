@@ -383,8 +383,11 @@ class FCSSwitch {
    */
   protected function url_exists($url)
   {
+      $xContext = array();
+      preg_match('/x-context=[^&]+/', $url, $xContext);
       $url = preg_replace('/\?.*$/', '', $url);
-      $handle = @fopen($url,'r');
+      $urlWithXContext = count($xContext) === 0 ? $url : "$url?$xContext[0]";
+      $handle = @fopen($urlWithXContext,'r');
       return ($handle !== false);
   }
 
