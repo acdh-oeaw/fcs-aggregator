@@ -792,7 +792,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         }
         $this->xsltParmeters = $sru_fcs_params->getParameterForXSLTProcessor($proc,
                 array('scripts_url', 'contexts_url', 'base_url', 'scripts_user',
-                    'scripts_pw', 'site_logo', 'site_name'));
+                    'scripts_pw', 'site_logo', 'site_name', 'x-context'));
     }
     if ($sru_fcs_params->recordPacking !== 'raw') {
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
