@@ -769,6 +769,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     }
     if ($useParams) {
         global $switchUrl;
+        global $switchUrlPublic;
         global $scriptsUrl;
         global $switchUser;
         global $switchPW;
@@ -780,8 +781,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         // for debugging purpose so switch doesn't call itself.
         if ($useCallback === false) {
             $proc->setParameter('', 'contexts_url', '');
+            $proc->setParameter('', 'indexes_url', '');
         }
         $proc->setParameter('', 'base_url', $switchUrl);
+        $proc->setParameter('', 'base_url_public', isset($switchUrlPublic) ? $switchUrlPublic : $switchUrl);
         $proc->setParameter('', 'scripts_user', $switchUser);
         $proc->setParameter('', 'scripts_pw', $switchPW);
         if (isset($switchSiteLogo) && $switchSiteLogo !== '') {
