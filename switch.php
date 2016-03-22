@@ -776,22 +776,24 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         global $switchSiteLogo;
         global $switchSiteName;
         
-        $realHostName = $sru_fcs_params->xrealhostname;
-        $protocolRealHostNameSplit = explode(':', $realHostName, 2);
-        $realHostNameNoProtocol = count($protocolRealHostNameSplit) === 2 ?
+        if ($sru_fcs_params->xrealhostname !== '') {
+            $realHostName = $sru_fcs_params->xrealhostname;
+            $protocolRealHostNameSplit = explode(':', $realHostName, 2);
+            $realHostNameNoProtocol = count($protocolRealHostNameSplit) === 2 ?
                 $protocolRealHostNameSplit[1] : $realHostName;
         
-        $switchUrlPublic = str_replace(array('http://localhost', '//localhost'),
-                                       array($realHostName, $realHostNameNoProtocol),
-                                       $switchUrlPublic);
+            $switchUrlPublic = str_replace(array('http://localhost', '//localhost'),
+                                           array($realHostName, $realHostNameNoProtocol),
+                                           $switchUrlPublic);
         
-        $switchSiteLogo = str_replace(array('http://localhost', '//localhost'),
+            $switchSiteLogo = str_replace(array('http://localhost', '//localhost'),
+                                          array($realHostName, $realHostNameNoProtocol),
+                                          $switchSiteLogo);
+        
+            $scriptsUrl = str_replace(array('http://localhost', '//localhost'),
                                       array($realHostName, $realHostNameNoProtocol),
-                                      $switchSiteLogo);
-        
-        $scriptsUrl = str_replace(array('http://localhost', '//localhost'),
-                                  array($realHostName, $realHostNameNoProtocol),
-                                  $scriptsUrl);
+                                      $scriptsUrl);
+        }
         
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
