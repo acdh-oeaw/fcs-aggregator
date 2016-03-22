@@ -776,6 +776,23 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         global $switchSiteLogo;
         global $switchSiteName;
         
+        $realHostName = $sru_fcs_params->xrealhostname;
+        $protocolRealHostNameSplit = explode(':', $realHostName, 2);
+        $realHostNameNoProtocol = count($protocolRealHostNameSplit) === 2 ?
+                $protocolRealHostNameSplit[1] : $realHostName;
+        
+        $switchUrlPublic = str_replace(array('http://localhost', '//localhost'),
+                                       array($realHostName, $realHostNameNoProtocol),
+                                       $switchUrlPublic);
+        
+        $switchSiteLogo = str_replace(array('http://localhost', '//localhost'),
+                                      array($realHostName, $realHostNameNoProtocol),
+                                      $switchSiteLogo);
+        
+        $scriptsUrl = str_replace(array('http://localhost', '//localhost'),
+                                  array($realHostName, $realHostNameNoProtocol),
+                                  $scriptsUrl);
+        
         $sru_fcs_params->passParametersToXSLTProcessor($proc);
         $proc->setParameter('', 'scripts_url', $scriptsUrl);
         // for debugging purpose so switch doesn't call itself.
@@ -794,8 +811,8 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             $proc->setParameter('', 'site_name', $switchSiteName);
         }
         $this->xsltParmeters = $sru_fcs_params->getParameterForXSLTProcessor($proc,
-                array('scripts_url', 'contexts_url', 'base_url', 'scripts_user',
-                    'scripts_pw', 'site_logo', 'site_name', 'x-context'));
+                array('scripts_url', 'contexts_url', 'base_url', 'base_url_public',
+                    'scripts_user', 'scripts_pw', 'site_logo', 'site_name', 'x-context'));
     }
     if ($sru_fcs_params->recordPacking !== 'raw') {
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
