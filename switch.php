@@ -513,7 +513,7 @@ class FCSSwitch {
               try {
                 $xmlDoc->loadXML($xmlString);
               } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
-                  $message = $e->getMessage() . "\n" . $xmlString;
+                  $message = $e->getMessage() . "\n" . htmlspecialchars($xmlString, ENT_XML1);
                   throw new ErrorOrWarningException($e->getCode(),
                   $message, $e->getFile(), $e->getLine(), $e->getContext());
               }
