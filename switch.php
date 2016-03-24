@@ -513,9 +513,14 @@ class FCSSwitch {
               try {
                 $xmlDoc->loadXML($xmlString);
               } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
-                  $message = $e->getMessage() . "\n" . htmlspecialchars($xmlString, ENT_XML1);
-                  throw new ErrorOrWarningException($e->getCode(),
-                  $message, $e->getFile(), $e->getLine(), $e->getContext());
+                    if (strpos($e->getMessage(), 'already defined in Entity') !== false) {
+                        throw new DOMProcessingWarning($xmlDoc, 
+                                $e->getMessage(), $e->getCode(), 
+                                0, $e->getFile(), $e->getLine(), $e);
+                    } else {
+                        $message = $e->getMessage() . "\n" . htmlspecialchars($xmlString, ENT_XML1);
+                        throw new ErrorOrWarningException($e->getCode(), $message, $e->getFile(), $e->getLine(), $e->getContext());
+                    }
               }
           } else {
           $xmlDoc->load($url);         
@@ -897,6 +902,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                     } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
                       $xmlDoc = false;
                       $fileName .= '\n' . $e->getMessage();
+                    } catch (DOMProcessingWarning $dpwe) {
+                      $xmlDoc = $dpwe->getXmlDoc();
+                      $domProcessingMessage = $dpwe->getMessage();
+                      // TODO: deliver this!
                     }
                 } else {
                     $xmlDoc = new \DOMDocument();
@@ -1019,6 +1028,19 @@ public function run() {
                     break;
             }
         }
+    }
+}
+
+class DOMProcessingWarning extends \ErrorException {
+    private $xml_doc;
+    
+    public function __construct($xml_doc, $message = "", $code = 0, $severity = 1, $filename = '__FILE__', $lineno = '__LINE__', \Exception $previous = null) {
+        parent::__construct($message, $code, $severity, $filename, $lineno, $previous);
+        $this->xml_doc = $xml_doc;
+    }
+    
+    public function getXmlDoc() {
+        return $this->xml_doc;
     }
 }
 
