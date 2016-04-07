@@ -735,7 +735,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     $ret->createAttributeNS('http://www.w3.org/1999/XSL/Transform', 'xsl:create-ns');
     $query = new \DOMXPath($ret);
     $qres = $query->query('//xsl:stylesheet');
-    if (!$qres->item(0)->isSameNode($ret->documentElement)) {      
+    if (($qres->item(0) !== NULL) && (!$qres->item(0)->isSameNode($ret->documentElement))) {      
         $xslText = str_replace(array('&amp;gt;', '&amp;lt;', '&amp;amp;'),
                                array( "&gt;", "&lt;" ,"&amp;"),
                                $qres->item(0)->C14N());
@@ -759,6 +759,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
    * @uses $scanClause
    * @uses $query
    * @uses $switchUrl
+   * @uses $useLoaderFunc
    *  
    * @param DOMDocument $xmlDoc The XML input document as XML DOM representation.
    * @param DOMDocument|SimpleXMLElement $xslDoc The XSL style sheet used for the transformation.
@@ -780,6 +781,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         global $switchPW;
         global $switchSiteLogo;
         global $switchSiteName;
+        global $useLoaderFunc;
         
         if ($sru_fcs_params->xrealhostname !== '') {
             $realHostName = $sru_fcs_params->xrealhostname;
@@ -838,7 +840,23 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     }
     
     ErrorOrWarningException::$code_has_known_errors = true;
+        if ($useLoaderFunc) {
+            libxml_set_external_entity_loader(function($public, $system, $context) {
+                // Don't try loading from www.w3.org. That is slowed down on purpose.
+                if (strpos($system, 'http://www.w3.org/TR/xhtml1/') !== false) {
+                    return NULL;
+                }
+                // Pass everything else to the default loader.
+                return $system;
+            });
+            xdebug_start_error_collection();
+        }
         $ret = $proc->transformToXml($xmlDoc);
+        if ($useLoaderFunc) {
+            // We know there were most probably errors, ignore them.
+            $ignoredErrors = xdebug_get_collected_errors(true);
+            xdebug_stop_error_collection();
+        }
     ErrorOrWarningException::$code_has_known_errors = false;
     return $ret;
   }
@@ -913,8 +931,13 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                 }
                 if ($xmlDoc !== false) {
                     $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
-                    if ($xslDoc !== false)
-                        print $this->ReturnXslT($xmlDoc, $xslDoc, true);
+                    if ($xslDoc !== false) {
+                        try {
+                            print $this->ReturnXslT($xmlDoc, $xslDoc, true);
+                        } catch (XSLTProcessingError $xsltError) {
+                            \ACDH\FCSSRU\diagnostics(1, str_replace("&", "&amp;", $xsltError->getMessage()));
+                        }
+                    }
                     else
                     //"Unsupported context set"
                         \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $this->GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
