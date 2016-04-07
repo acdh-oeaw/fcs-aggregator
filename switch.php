@@ -840,6 +840,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
     }
     
     ErrorOrWarningException::$code_has_known_errors = true;
+        $xdebug_loaded = function_exists('xdebug_start_error_collection');
         if ($useLoaderFunc) {
             libxml_set_external_entity_loader(function($public, $system, $context) {
                 // Don't try loading from www.w3.org. That is slowed down on purpose.
@@ -849,10 +850,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                 // Pass everything else to the default loader.
                 return $system;
             });
-            xdebug_start_error_collection();
+            if ($xdebug_loaded) {xdebug_start_error_collection();}
         }
         $ret = $proc->transformToXml($xmlDoc);
-        if ($useLoaderFunc) {
+        if ($useLoaderFunc && $xdebug_loaded) {
             // We know there were most probably errors, ignore them.
             $ignoredErrors = xdebug_get_collected_errors(true);
             xdebug_stop_error_collection();
