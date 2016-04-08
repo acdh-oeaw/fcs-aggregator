@@ -788,17 +788,18 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
             $protocolRealHostNameSplit = explode(':', $realHostName, 2);
             $realHostNameNoProtocol = count($protocolRealHostNameSplit) === 2 ?
                 $protocolRealHostNameSplit[1] : $realHostName;
-        
-            $switchUrlPublic = str_replace(array('http://localhost', '//localhost'),
-                                           array($realHostName, $realHostNameNoProtocol),
+            $localHostVaraints = array('http://localhost', '//localhost', 'http://127.0.0.1', '//127.0.0.1');
+            $localHostVaraintsReplacements = array($realHostName, $realHostNameNoProtocol, $realHostName, $realHostNameNoProtocol);
+            $switchUrlPublic = str_replace($localHostVaraints,
+                                           $localHostVaraintsReplacements,
                                            $switchUrlPublic);
         
-            $switchSiteLogo = str_replace(array('http://localhost', '//localhost'),
-                                          array($realHostName, $realHostNameNoProtocol),
+            $switchSiteLogo = str_replace($localHostVaraints,
+                                          $localHostVaraintsReplacements,
                                           $switchSiteLogo);
         
-            $scriptsUrl = str_replace(array('http://localhost', '//localhost'),
-                                      array($realHostName, $realHostNameNoProtocol),
+            $scriptsUrl = str_replace($localHostVaraints,
+                                      $localHostVaraintsReplacements,
                                       $scriptsUrl);
         }
         
