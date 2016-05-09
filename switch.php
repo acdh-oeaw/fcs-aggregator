@@ -1028,13 +1028,13 @@ public function run() {
 
                     break;
                 case "searchRetrieve" :
-                    if ($sru_fcs_params->query === false) {
+                    if ($sru_fcs_params->getQuery() === false) {
                         //"Mandatory parameter not supplied"
                         \ACDH\FCSSRU\diagnostics(7, "query");
                     } elseif ($sru_fcs_params->version === false) {
                         //"Mandatory parameter not supplied"
                         \ACDH\FCSSRU\diagnostics(7, "version");
-                    } elseif ($sru_fcs_params->query == "") {
+                    } elseif ($sru_fcs_params->getQuery() == "") {
                         //"Unsupported parameter value"
                         \ACDH\FCSSRU\diagnostics(6, "no query specified");
                     } elseif ($sru_fcs_params->version == "") {
