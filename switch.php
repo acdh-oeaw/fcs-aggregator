@@ -112,6 +112,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 use jmathai\phpMultiCurl\EpiCurl,
     ACDH\FCSSRU\IndentDomDocument,
+    ACDH\FCSSRU\SRUDiagnostics,
     ACDH\FCSSRU\ErrorOrWarningException;
 
   /**
@@ -920,8 +921,13 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                     try {
                       $xmlDoc = $this->GetDomDocument($fileName);
                     } catch (\ACDH\FCSSRU\ErrorOrWarningException $e) {
-                      $xmlDoc = false;
-                      $fileName .= '\n' . $e->getMessage();
+                      $fileName .= "\n" . $e->getMessage();
+                      $diag = new SRUDiagnostics(52, str_replace("&", "&amp;", $fileName));
+                      $xmlDoc = new \DOMDocument();
+                      $xmlDoc->loadXML($diag->getAsXML());
+//                      Can be used for debugging switch internal error messages.
+//                      Just uncomment below to see the XML for an error message.
+//                      $xmlDoc = false;
                     } catch (DOMProcessingWarning $dpwe) {
                       $xmlDoc = $dpwe->getXmlDoc();
                       $domProcessingMessage = $dpwe->getMessage();
