@@ -31,7 +31,7 @@
   /**
    * Load the common config file
    */
-  include "../utils-php/config.php";
+  include "../utils-php/common.php";
 
   /**
    * Get the node value of the first occurrence of $tagName
