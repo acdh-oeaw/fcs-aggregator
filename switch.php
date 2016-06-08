@@ -138,6 +138,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 use jmathai\phpMultiCurl\EpiCurl,
     ACDH\FCSSRU\IndentDomDocument,
     ACDH\FCSSRU\SRUDiagnostics,
+    ACDH\FCSSRU\ESRUDiagnostics,
     ACDH\FCSSRU\ErrorOrWarningException;
 
   /**
@@ -559,8 +560,8 @@ class FCSSwitch {
 
       return $xmlDoc;
     }
-
-    return false;
+    $error = new SRUDiagnostics(1, "$url does not exist.");
+    throw new ESRUDiagnostics($error);
   }
 
   /**
@@ -767,7 +768,7 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                                $qres->item(0)->C14N());
         $ret = new \DOMDocument();
         $ret->loadXML($xslText);
-  }
+    }
     return $ret;
   }
 
@@ -846,9 +847,10 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
         if (isset($switchSiteName) && $switchSiteName !== '') {
             $proc->setParameter('', 'site_name', $switchSiteName);
         }
-        $this->xsltParmeters = $sru_fcs_params->getParameterForXSLTProcessor($proc,
+        $this->xsltParmeters = json_encode($sru_fcs_params->getParameterForXSLTProcessor($proc,
                 array('scripts_url', 'contexts_url', 'base_url', 'base_url_public',
-                    'scripts_user', 'scripts_pw', 'site_logo', 'site_name', 'x-context'));
+                    'scripts_user', 'scripts_pw', 'site_logo', 'site_name', 'x-context')));
+        $proc->setParameter('', 'parameters_as_json', $this->xsltParmeters);
     }
     if ($sru_fcs_params->recordPacking !== 'raw') {
     if (stripos($sru_fcs_params->xformat, "html") !== false) {
@@ -963,17 +965,16 @@ protected function wrapInMinimalTEI($xmlDocument, $teiNodeList) {
                     $xmlDoc->loadXML($xmlString);
                 }
                 if ($xmlDoc !== false) {
-                    $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
-                    if ($xslDoc !== false) {
+                    try {
+                        $xslDoc = $this->GetXslStyleDomDocument($sru_fcs_params->operation, $configItem);
                         try {
                             print $this->ReturnXslT($xmlDoc, $xslDoc, true);
                         } catch (XSLTProcessingError $xsltError) {
                             \ACDH\FCSSRU\diagnostics(1, str_replace("&", "&amp;", $xsltError->getMessage()));
                         }
+                    } catch (ESRUDiagnostics $e) {
+                        \ACDH\FCSSRU\diagnostics($e->getSRUDiagnostics());
                     }
-                    else
-                    //"Unsupported context set"
-                        \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $this->GetXslStyle($sru_fcs_params->operation, $configItem) . ":  " . $item));
                 } else
                 //"Unsupported context set"
                     \ACDH\FCSSRU\diagnostics(15, str_replace("&", "&amp;", $fileName));
