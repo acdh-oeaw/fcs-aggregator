@@ -592,7 +592,8 @@ class FCSSwitch {
         try {
             $xml->loadXML($xmlString);            
         } catch (ErrorOrWarningException $exc) {
-            $a = 1;
+            \ACDH\FCSSRU\diagnostics(new SRUDiagnostics(1, isset($exc->getContext()['xmlString']) ? $exc->getContext()['xmlString'] : ''));
+            return;
         }
     } else {
     //"Unsupported context set"
