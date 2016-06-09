@@ -592,7 +592,10 @@ class FCSSwitch {
         try {
             $xml->loadXML($xmlString);            
         } catch (ErrorOrWarningException $exc) {
-            \ACDH\FCSSRU\diagnostics(new SRUDiagnostics(1, isset($exc->getContext()['xmlString']) ? $exc->getContext()['xmlString'] : ''));
+            \ACDH\FCSSRU\diagnostics(new SRUDiagnostics(1, "Invalid XML form upstream:\r\n"
+                    .(isset($exc->getContext()['url']) ? htmlentities($exc->getContext()['url'], ENT_XML1)."\r\n" : '')
+                    .(isset($exc->getContext()['xmlString']) ? $exc->getContext()['xmlString'] : '')
+                ));
             return;
         }
     } else {
